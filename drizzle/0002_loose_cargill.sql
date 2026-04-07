@@ -1,0 +1,1 @@
+ALTER TABLE "account" RENAME COLUMN "token_type" TO "password";
