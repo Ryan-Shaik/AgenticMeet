@@ -7,6 +7,7 @@ import { Button } from "../../components/ui/button";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { StartMeetingButton } from "@/components/dashboard/StartMeetingButton";
 
 const Dashboard = async () => {
   const session = await getSession();
@@ -89,9 +90,7 @@ const Dashboard = async () => {
                   </div>
                 </div>
 
-                <Button variant="neon" className="w-full">
-                  <Plus size={18} /> Start Meeting with AI Agent
-                </Button>
+                <StartMeetingButton />
               </div>
             </div>
           </div>
