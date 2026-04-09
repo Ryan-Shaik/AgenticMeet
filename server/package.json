@@ -1,0 +1,11 @@
+{
+  "name": "vosk-server",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "vosk": "^0.3.39",
+    "ws": "^8.18.0"
+  }
+}
