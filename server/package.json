@@ -5,6 +5,7 @@
     "start": "node index.js"
   },
   "dependencies": {
+    "dotenv": "^17.4.1",
     "vosk": "^0.3.39",
     "ws": "^8.18.0"
   }

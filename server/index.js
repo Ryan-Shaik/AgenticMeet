@@ -1,10 +1,12 @@
+require('dotenv').config({ path: '../.env' });
 const { WebSocketServer } = require('ws');
+const port = process.env.WS_PORT || 5001;
 
-const wss = new WebSocketServer({ port: 5001 });
+const wss = new WebSocketServer({ port });
 
 const meetings = new Map();
 
-console.log('WebSocket server started on port 5001');
+console.log(`WebSocket server started on port ${port}`);
 
 wss.on('connection', (ws) => {
   console.log('Client connected');
