@@ -1,18 +1,27 @@
 "use client";
 
-import { use } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, use } from "react";
 import { MeetingRoom } from "@/components/MeetingRoom";
 import { useSession } from "@/lib/auth-client";
-import { redirect } from "next/navigation";
 
 export default function MeetingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data: session, isPending } = useSession();
+  const router = useRouter();
 
-  if (isPending) return <div className="flex items-center justify-center h-screen bg-obsidian-black text-chalk-white font-sans animate-pulse">Authenticating Session...</div>;
-  
-  if (!session) {
-    return redirect("/login");
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.replace("/login");
+    }
+  }, [session, isPending, router]);
+
+  if (isPending || !session) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-obsidian-black text-chalk-white font-sans animate-pulse">
+        Authenticating Session...
+      </div>
+    );
   }
 
   return (
