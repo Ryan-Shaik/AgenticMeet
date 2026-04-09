@@ -15,15 +15,15 @@ interface LiveTranscriptProps {
 }
 
 export function LiveTranscript({ meetingId }: LiveTranscriptProps) {
-  const [speakerName, setSpeakerName] = useState('You');
+  const [speakerName, setSpeakerName] = useState('User');
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [currentText, setCurrentText] = useState('');
   const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
-  const startedRef = useRef(false);
+  const speakerNameRef = useRef('User');
 
   useEffect(() => {
     return () => {
@@ -38,13 +38,15 @@ export function LiveTranscript({ meetingId }: LiveTranscriptProps) {
 
   useEffect(() => {
     if (transcriptContainerRef.current) {
-      transcriptContainerRef.current.scrollTop = 0;
+      transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
     }
   }, [transcripts, currentText]);
 
+  useEffect(() => {
+    speakerNameRef.current = speakerName;
+  }, [speakerName]);
+
   const startRecording = useCallback(async () => {
-    if (startedRef.current) return;
-    startedRef.current = true;
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
@@ -64,7 +66,7 @@ export function LiveTranscript({ meetingId }: LiveTranscriptProps) {
           wsRef.current?.send(JSON.stringify({
             type: 'join',
             meetingId: meetingId,
-            speakerName: speakerName
+            speakerName: speakerNameRef.current
           }));
           resolve();
         };
@@ -79,7 +81,7 @@ export function LiveTranscript({ meetingId }: LiveTranscriptProps) {
             if (data.type === 'joined') {
               console.log('Joined meeting:', data.meetingId);
             } else if (data.type === 'transcription') {
-              if (data.speaker !== speakerName) {
+              if (data.speaker !== speakerNameRef.current) {
                 const newTranscript: Transcript = {
                   id: crypto.randomUUID(),
                   speakerName: data.speaker,
@@ -136,7 +138,7 @@ export function LiveTranscript({ meetingId }: LiveTranscriptProps) {
             wsRef.current.send(JSON.stringify({
               type: 'transcription',
               text: finalTranscript,
-              speaker: speakerName,
+              speaker: speakerNameRef.current,
               meetingId: meetingId,
               timestamp: new Date().toISOString()
             }));
@@ -144,7 +146,7 @@ export function LiveTranscript({ meetingId }: LiveTranscriptProps) {
 
           const newTranscript: Transcript = {
             id: crypto.randomUUID(),
-            speakerName: speakerName,
+            speakerName: speakerNameRef.current,
             content: finalTranscript,
             timestamp: new Date(),
           };
@@ -156,7 +158,7 @@ export function LiveTranscript({ meetingId }: LiveTranscriptProps) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               meetingId,
-              speakerName: speakerName,
+              speakerName: speakerNameRef.current,
               content: finalTranscript,
             }),
           }).catch(console.error);
@@ -173,11 +175,11 @@ export function LiveTranscript({ meetingId }: LiveTranscriptProps) {
       console.error('Failed to start recording:', err);
       setError('Failed to start recording');
     }
-  }, [meetingId, speakerName]);
+  }, [meetingId]);
 
   useEffect(() => {
     startRecording();
-  }, []);
+  }, [startRecording]);
 
   return (
     <div className="bg-gray-800 rounded-lg p-4">
