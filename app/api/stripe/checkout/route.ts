@@ -28,6 +28,21 @@ export async function POST(req: NextRequest) {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+    } else if (existingSub && existingSub.status !== 'active') {
+      await db.update(subscription)
+        .set({
+          planId,
+          status: 'inactive',
+          updatedAt: new Date(),
+        })
+        .where(eq(subscription.id, existingSub.id));
+    } else if (existingSub && existingSub.status === 'active') {
+      await db.update(subscription)
+        .set({
+          planId,
+          updatedAt: new Date(),
+        })
+        .where(eq(subscription.id, existingSub.id));
     }
 
     const priceId = planId === 'pro'
