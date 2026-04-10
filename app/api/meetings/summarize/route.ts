@@ -8,6 +8,13 @@ import { summaries } from "@/db/schema";
 export async function POST(req: Request) {
   try {
     const { meetingId } = await req.json();
+    const apiKey = req.headers.get("x-api-key");
+    const secret = process.env.INTERNAL_API_SECRET || "dev-secret-key";
+
+    if (apiKey !== secret) {
+        console.warn(`[Summarize] Unauthorized request attempt for ${meetingId}`);
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     if (!meetingId) {
       return NextResponse.json({ error: "Meeting ID is required" }, { status: 400 });

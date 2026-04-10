@@ -84,7 +84,10 @@ wss.on('connection', (ws) => {
         
         fetch(`${apiUrl}/api/meetings/summarize`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.INTERNAL_API_SECRET || 'dev-secret-key'
+          },
           body: JSON.stringify({ meetingId: ws.meetingId })
         }).then(async r => {
           const resText = await r.text();

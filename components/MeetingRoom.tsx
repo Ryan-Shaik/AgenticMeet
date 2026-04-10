@@ -46,13 +46,6 @@ export function MeetingRoom({ roomName, userName }: MeetingRoomProps) {
       data-lk-theme="default"
       style={{ height: "100dvh" }}
       onDisconnected={() => {
-        // Trigger summary on disconnect (Client-side backup)
-        fetch("/api/meetings/summarize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ meetingId: roomName })
-        }).catch(err => console.error("Client-side summary trigger error:", err));
-        
         router.push("/dashboard");
       }}
     >
