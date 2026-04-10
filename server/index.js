@@ -74,7 +74,23 @@ wss.on('connection', (ws) => {
       }));
       
       if (meetings.get(ws.meetingId).size === 0) {
+        console.log(`[WS Server] Last user left ${ws.meetingId}. Triggering automatic summary...`);
         meetings.delete(ws.meetingId);
+
+        // Auto-trigger summarization (Development automation)
+        // This bypasses the need for webhooks during local testing
+        const apiUrl = process.env.BETTER_AUTH_URL || 'http://localhost:3000';
+        console.log(`[WS Server] Sending summarize request for ${ws.meetingId} to: ${apiUrl}/api/meetings/summarize`);
+        
+        fetch(`${apiUrl}/api/meetings/summarize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ meetingId: ws.meetingId })
+        }).then(async r => {
+          const resText = await r.text();
+          console.log(`[WS Server] Auto-summary result for ${ws.meetingId}: HTTP ${r.status}`, resText);
+        })
+          .catch(err => console.error(`[WS Server] Auto-summary error for ${ws.meetingId}:`, err.message));
       }
     }
     console.log('Client disconnected');

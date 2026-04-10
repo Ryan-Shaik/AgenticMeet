@@ -1,4 +1,4 @@
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp, jsonb } from "drizzle-orm/pg-core";
 
 export const user =  pgTable("user", {
     id: text("id").primaryKey(),
@@ -73,6 +73,17 @@ export const transcripts = pgTable("transcripts", {
     createdAt: timestamp("created_at").notNull(),
 });
 
+export const summaries = pgTable("summaries", {
+    id: text("id").primaryKey(),
+    meetingId: text("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
+    executiveSummary: text("executive_summary"),
+    topics: jsonb("topics"), // Array of { title: string, points: string[] }
+    actionItems: jsonb("action_items"), // Array of { task: string, assignee?: string }
+    decisions: jsonb("decisions"), // Array of strings
+    sentiment: text("sentiment"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export type User = typeof user.$inferSelect;
 export type Session = typeof session.$inferSelect;
 export type Account = typeof account.$inferSelect;
@@ -80,6 +91,6 @@ export type Verification = typeof verification.$inferSelect;
 export type Meeting = typeof meetings.$inferSelect;
 export type Speaker = typeof speakers.$inferSelect;
 export type Transcript = typeof transcripts.$inferSelect;
+export type Summary = typeof summaries.$inferSelect;
 export type NewMeeting = typeof meetings.$inferInsert;
-
-
+export type NewSummary = typeof summaries.$inferInsert;

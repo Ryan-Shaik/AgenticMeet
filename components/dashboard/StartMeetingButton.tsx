@@ -9,12 +9,31 @@ export function StartMeetingButton() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleStartMeeting = () => {
+  const handleStartMeeting = async () => {
     setIsLoading(true);
-    // Generate a unique room ID
-    const roomId = `meeting-${Math.random().toString(36).substring(2, 9)}`;
-    // Redirect to the meeting page
-    router.push(`/meeting/${roomId}`);
+    try {
+      // Generate a unique room ID
+      const roomId = `meeting-${Math.random().toString(36).substring(2, 9)}`;
+      
+      // Register the meeting in the database first
+      const resp = await fetch("/api/meetings/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          id: roomId,
+          title: `Executive Briefing ${new Date().toLocaleDateString()}` 
+        }),
+      });
+
+      if (!resp.ok) throw new Error("Failed to initialize meeting record");
+
+      // Redirect to the meeting page
+      router.push(`/meeting/${roomId}`);
+    } catch (err) {
+      console.error(err);
+      alert("System Error: Could not start meeting. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -8,10 +8,43 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { StartMeetingButton } from "@/components/dashboard/StartMeetingButton";
+import { db } from "@/db";
+import { summaries, meetings } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
+import { InsightsFeed } from "@/components/dashboard/InsightsFeed";
+import { MeetingActivity } from "@/components/dashboard/MeetingActivity";
 
 const Dashboard = async () => {
   const session = await getSession();
   if(!session) return redirect("/login");
+
+  const insights = await db
+    .select({
+      id: summaries.id,
+      meetingTitle: meetings.title,
+      executiveSummary: summaries.executiveSummary,
+      sentiment: summaries.sentiment,
+      createdAt: summaries.createdAt,
+      topics: summaries.topics,
+      actionItems: summaries.actionItems,
+      decisions: summaries.decisions,
+    })
+    .from(summaries)
+    .leftJoin(meetings, eq(summaries.meetingId, meetings.id))
+    .orderBy(desc(summaries.createdAt))
+    .limit(10);
+
+  const recentMeetings = await db
+    .select({
+      id: meetings.id,
+      title: meetings.title,
+      status: meetings.status,
+      createdAt: meetings.createdAt,
+    })
+    .from(meetings)
+    .orderBy(desc(meetings.createdAt))
+    .limit(5);
+
   return (
     <div className="min-h-screen bg-obsidian-black text-chalk-white font-sans flex overflow-hidden">
       
@@ -97,61 +130,7 @@ const Dashboard = async () => {
 
           {/* AI Intelligence Feed (Center Top) */}
           <div className="lg:col-span-5 flex flex-col gap-6">
-             <div className="glass-card rounded-3xl p-6 border border-white/5 h-full flex flex-col">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-2">
-                    <Zap size={18} className="text-aurora-teal" />
-                    <h2 className="text-white font-bold text-lg">Agentic Insights Feed</h2>
-                  </div>
-                  <button className="text-xs font-semibold text-white/50 hover:text-white transition-colors">View All</button>
-                </div>
-
-                <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-                  {/* Insight Card 1 */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/5 hover:border-aurora-teal/30 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-2 h-2 rounded-full bg-electric-blue"></div>
-                      <span className="text-xs font-bold text-white/70">Project Apollo Sync</span>
-                      <span className="text-[10px] uppercase font-bold text-white/30 ml-auto">2 hours ago</span>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex gap-3">
-                        <CheckCircle2 size={16} className="text-aurora-teal shrink-0 mt-0.5" />
-                        <p className="text-sm font-medium text-white/90 leading-tight">3 Action Items assigned to Sarah for backend refactor.</p>
-                      </div>
-                      <div className="flex gap-3">
-                        <Activity size={16} className="text-neon-violet shrink-0 mt-0.5" />
-                        <p className="text-sm font-medium text-white/90 leading-tight">Decisions Made: Q4 Budget Approved.</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/5 border border-white/5 text-[10px] font-bold text-white/60">
-                        Sentiment <span className="text-aurora-teal">Positive ↑</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Insight Card 2 */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/5 hover:border-aurora-teal/30 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-2 h-2 rounded-full bg-neon-violet"></div>
-                      <span className="text-xs font-bold text-white/70">Marketing Standup</span>
-                      <span className="text-[10px] uppercase font-bold text-white/30 ml-auto">5 hours ago</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex gap-3">
-                        <CheckCircle2 size={16} className="text-aurora-teal shrink-0 mt-0.5" />
-                        <p className="text-sm font-medium text-white/90 leading-tight">Michael leading campaign redesign.</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/5 border border-white/5 text-[10px] font-bold text-white/60">
-                        Sentiment <span className="text-white/80">Neutral →</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-             </div>
+             <InsightsFeed initialInsights={insights} />
           </div>
 
           {/* Live Meeting Activity (Right) */}

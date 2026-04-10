@@ -45,7 +45,16 @@ export function MeetingRoom({ roomName, userName }: MeetingRoomProps) {
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
       data-lk-theme="default"
       style={{ height: "100dvh" }}
-      onDisconnected={() => router.push("/dashboard")}
+      onDisconnected={() => {
+        // Trigger summary on disconnect (Client-side backup)
+        fetch("/api/meetings/summarize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ meetingId: roomName })
+        }).catch(err => console.error("Client-side summary trigger error:", err));
+        
+        router.push("/dashboard");
+      }}
     >
       <LayoutContextProvider>
         <div className="flex flex-col md:flex-row h-full bg-obsidian-black bg-grid relative overflow-hidden">

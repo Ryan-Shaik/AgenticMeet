@@ -1,0 +1,65 @@
+import { NextResponse } from "next/server";
+import { db } from "@/db";
+import { meetings } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { generateMeetingSummary } from "@/lib/ai/summarizer";
+import { summaries } from "@/db/schema";
+
+export async function POST(req: Request) {
+  try {
+    const { meetingId } = await req.json();
+
+    if (!meetingId) {
+      return NextResponse.json({ error: "Meeting ID is required" }, { status: 400 });
+    }
+
+    console.log(`[Summarize] Starting summary generation for meeting: ${meetingId}`);
+
+    // Wait 2 seconds for all pending transcripts to flush to DB
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Phase 2: Call the Gemini intelligence engine
+    const summary = await generateMeetingSummary(meetingId);
+    
+    if (!summary) {
+        return NextResponse.json({ error: "Failed to generate summary or no transcripts found" }, { status: 404 });
+    }
+
+    // Phase 3: Persistence
+    const summaryId = crypto.randomUUID();
+    await db.insert(summaries).values({
+        id: summaryId,
+        meetingId: meetingId,
+        executiveSummary: summary.executiveSummary,
+        topics: summary.topics,
+        actionItems: summary.actionItems,
+        decisions: summary.decisions,
+        sentiment: summary.sentiment,
+    });
+
+    // Update meeting status to completed
+    await db.update(meetings)
+      .set({ status: "completed" })
+      .where(eq(meetings.id, meetingId));
+
+    console.log(`[Summarize] Summary persisted successfully with ID: ${summaryId}`);
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: "Summary generated and saved successfully",
+      meetingId,
+      summaryId,
+      summary
+    });
+  } catch (error: any) {
+    console.error("[Summarize] Error details:", {
+        message: error.message,
+        stack: error.stack,
+        meetingId
+    });
+    return NextResponse.json({ 
+        error: "Internal Server Error",
+        details: error.message 
+    }, { status: 500 });
+  }
+}
