@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: userSub.stripeCustomerId,
-      return_url: `${process.env.BETTER_AUTH_URL}/dashboard`,
+      return_url: `${process.env.BETTER_AUTH_URL}/cancellation-complete`,
     });
 
     return NextResponse.json({ url: session.url });

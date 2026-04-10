@@ -57,12 +57,13 @@ const Dashboard = async () => {
   if(!session) return redirect("/login");
 
   const subData = await getSubscriptionData(session.user.id);
-  const planName = subData?.plan?.name || 'free';
-  const planPrice = subData?.plan?.price || '0';
+  const isActive = subData?.status === 'active';
+  const planName = isActive ? (subData?.plan?.name || 'free') : 'free';
+  const planPrice = isActive ? (subData?.plan?.price || '0') : '0';
   const meetingsUsed = parseInt(subData?.usage?.meetingsUsed || '0');
   const minutesUsed = parseInt(subData?.usage?.minutesUsed || '0');
-  const meetingLimit = subData?.plan?.meetingLimit ? parseInt(subData.plan.meetingLimit) : -1;
-  const minuteLimit = subData?.plan?.minuteLimit ? parseInt(subData.plan.minuteLimit) : -1;
+  const meetingLimit = isActive && subData?.plan?.meetingLimit ? parseInt(subData.plan.meetingLimit) : -1;
+  const minuteLimit = isActive && subData?.plan?.minuteLimit ? parseInt(subData.plan.minuteLimit) : -1;
   return (
     <div className="min-h-screen bg-obsidian-black text-chalk-white font-sans flex overflow-hidden">
       
