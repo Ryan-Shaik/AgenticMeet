@@ -44,7 +44,7 @@ export default function SignUp() {
 
         {/* Decorative Quote */}
         <div className="relative z-10 p-6 glass-card rounded-2xl border border-white/10 text-white/70 text-sm italic backdrop-blur-md">
-          "The AI participant completely changed how we run our weekly syncs. Decisions are tracked instantly, and follow-ups are automated. Magic."
+          &quot;The AI participant completely changed how we run our weekly syncs. Decisions are tracked instantly, and follow-ups are automated. Magic.&quot;
         </div>
       </div>
 

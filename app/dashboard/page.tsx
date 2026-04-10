@@ -7,6 +7,8 @@ import { Button } from "../../components/ui/button";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
+import Image from "next/image";
+import Link from "next/link";
 
 const Dashboard = async () => {
   const session = await getSession();
@@ -44,15 +46,15 @@ const Dashboard = async () => {
             <p className="text-sm font-medium text-white/50 mt-1">Welcome back, {session?.user?.name?.split(' ')[0] || "User"}. You have 3 meetings today.</p>
           </div>
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-aurora-teal/10 border border-aurora-teal/30 text-aurora-teal text-xs font-bold uppercase tracking-widest shadow-[0_0_10px_rgba(0,240,255,0.1)]">
+            <Link href="/pricing" className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-aurora-teal/10 border border-aurora-teal/30 text-aurora-teal text-xs font-bold uppercase tracking-widest shadow-[0_0_10px_rgba(0,240,255,0.1)] hover:bg-aurora-teal/20 transition-colors">
               <Zap size={12} className="fill-aurora-teal" /> Pro Plan
-            </div>
-            <div className="flex items-center gap-3">
+            </Link>
+              <div className="flex items-center gap-3">
               <div className="text-right hidden md:block">
                 <div className="text-sm font-bold">{session?.user?.name || "User"}</div>
                 <div className="text-xs font-medium text-white/50">Director of Product</div>
               </div>
-              <img src={session?.user?.image || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100"} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-white/10" />
+              <Image src={session?.user?.image || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100"} alt="Avatar" width={40} height={40} className="w-10 h-10 rounded-full border-2 border-white/10" />
             </div>
             <LogoutButton />
           </div>
@@ -81,8 +83,8 @@ const Dashboard = async () => {
                       <h3 className="font-bold text-sm mb-1 text-white leading-tight">V2 Deployment Review</h3>
                       <p className="text-xs text-white/50 mb-3 font-medium">10:00 AM - 11:30 AM</p>
                       <div className="flex -space-x-2">
-                        <img src="https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=100" className="w-6 h-6 rounded-full border border-obsidian-black z-20" alt="User" />
-                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=100" className="w-6 h-6 rounded-full border border-obsidian-black z-10" alt="User" />
+                        <Image src="https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=100" alt="User" width={24} height={24} className="w-6 h-6 rounded-full border border-obsidian-black z-20" />
+                        <Image src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=100" alt="User" width={24} height={24} className="w-6 h-6 rounded-full border border-obsidian-black z-10" />
                         <div className="w-6 h-6 rounded-full border border-obsidian-black bg-white/10 flex items-center justify-center text-[10px] font-bold text-white z-0">+2</div>
                       </div>
                     </div>

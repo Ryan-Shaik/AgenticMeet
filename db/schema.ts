@@ -1,4 +1,5 @@
-import { boolean, pgTable, text , timestamp} from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 export const user =  pgTable("user", {
     id: text("id").primaryKey(),
@@ -44,6 +45,48 @@ export const verification = pgTable("verification", {
     expiresAt: timestamp("expires_at").notNull(),
     createdAt: timestamp("created_at"),
     updatedAt: timestamp("updated_at"),
-})
+});
 
+export const plan = pgTable("plan", {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    stripePriceId: text("stripe_price_id"),
+    price: text("price"),
+    interval: text("interval").notNull(),
+    meetingLimit: text("meeting_limit"),
+    minuteLimit: text("minute_limit"),
+    features: text("features"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").notNull(),
+    updatedAt: timestamp("updated_at").notNull(),
+});
 
+export const subscription = pgTable("subscription", {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    stripeCustomerId: text("stripe_customer_id").notNull().unique(),
+    stripeSubscriptionId: text("stripe_subscription_id").unique(),
+    planId: text("plan_id").notNull().references(() => plan.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("inactive"),
+    currentPeriodStart: timestamp("current_period_start"),
+    currentPeriodEnd: timestamp("current_period_end"),
+    createdAt: timestamp("created_at").notNull(),
+    updatedAt: timestamp("updated_at").notNull(),
+});
+
+export const userRelations = relations(user, ({ many }) => ({
+    subscriptions: many(subscription),
+    sessions: many(session),
+    accounts: many(account),
+}));
+
+export const subscriptionRelations = relations(subscription, ({ one }) => ({
+    user: one(user, {
+        fields: [subscription.userId],
+        references: [user.id],
+    }),
+    plan: one(plan, {
+        fields: [subscription.planId],
+        references: [plan.id],
+    }),
+}));

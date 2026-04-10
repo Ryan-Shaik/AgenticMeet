@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 
 export const auth = betterAuth({
     database: drizzleAdapter(db, { 
-        provider: "pg", // or "pg" or "mysql"
+        provider: "pg",
     }),
     pages: {
         signIn: "/login",
@@ -22,6 +22,12 @@ export const auth = betterAuth({
     },
 });
 
-export const getSession = async () => auth.api.getSession({
-    headers: await headers(),
-});
+export const getSession = async () => {
+    try {
+        return await auth.api.getSession({
+            headers: await headers(),
+        });
+    } catch {
+        return null;
+    }
+};
