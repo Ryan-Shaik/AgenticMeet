@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { transcripts as transcriptsTable } from '@/db/schema';
+import { meetings, transcripts as transcriptsTable } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
@@ -14,6 +14,14 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Safety-net: ensure the meeting row exists before inserting a transcript.
+    // The get-token route is the primary creator, but this handles edge cases
+    // (race conditions, direct API calls, replays) without throwing a FK error.
+    await db
+      .insert(meetings)
+      .values({ id: meetingId, title: meetingId, status: 'active' })
+      .onConflictDoNothing();
 
     const transcriptId = crypto.randomUUID();
     const now = new Date();

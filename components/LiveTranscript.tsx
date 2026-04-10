@@ -1,253 +1,174 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRoomContext } from '@livekit/components-react';
+import { RoomEvent, TranscriptionSegment, Participant } from 'livekit-client';
 
 interface Transcript {
   id: string;
   speakerName: string;
   content: string;
   timestamp: Date;
+  isAI?: boolean;
 }
 
 interface LiveTranscriptProps {
   meetingId: string;
+  userName: string;
 }
 
-export function LiveTranscript({ meetingId }: LiveTranscriptProps) {
-  const [speakerName, setSpeakerName] = useState('User');
+/**
+ * LiveTranscript Component (Improved Accuracy)
+ * Now purely relies on LiveKit's native, server-side transcription (Deepgram Nova-3).
+ * This eliminates the low-accuracy browser Web Speech API and unified transcript handling.
+ */
+export function LiveTranscript({ meetingId, userName }: LiveTranscriptProps) {
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
-  const [currentText, setCurrentText] = useState('');
-  const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const [interimTranscripts, setInterimTranscripts] = useState<Record<string, string>>({});
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
-  const speakerNameRef = useRef('User');
+  const room = useRoomContext();
 
+  // Task 4.4: High-Accuracy Unified Transcription Feed
   useEffect(() => {
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
+    if (!room) return;
+
+    const handleTranscription = (segments: TranscriptionSegment[], participant?: Participant) => {
+      const participantId = participant?.identity || "Unknown";
+      
+      // Update Interim (partial) text for real-time feedback
+      const partialText = segments
+        .filter(s => !s.final)
+        .map(s => s.text)
+        .join(' ')
+        .trim();
+        
+      if (partialText) {
+        setInterimTranscripts(prev => ({
+          ...prev,
+          [participantId]: partialText
+        }));
       }
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
+
+      // Handle Final segments
+      const finalSegments = segments.filter(s => s.final);
+      if (finalSegments.length === 0) return;
+
+      const text = finalSegments.map(s => s.text).join(' ').trim();
+      if (!text) return;
+
+      // Clear interim text for this participant once a segment is final
+      setInterimTranscripts(prev => {
+        const next = { ...prev };
+        delete next[participantId];
+        return next;
+      });
+
+      // Identify if participant is an agent
+      const isAI = participant?.identity.toLowerCase().includes('agent') || 
+                   participant?.identity.toLowerCase().includes('assistant');
+
+      const newTranscript: Transcript = {
+        id: crypto.randomUUID(),
+        speakerName: participant?.identity || "Participant",
+        content: text,
+        timestamp: new Date(),
+        isAI: isAI
+      };
+
+      setTranscripts(prev => [...prev, newTranscript]);
+
+      // Save to Database (Server-side STT is the source of truth)
+      fetch('/api/transcription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          meetingId,
+          speakerName: participant?.identity || "Participant",
+          content: text,
+        }),
+      }).catch(console.error);
     };
-  }, []);
+
+    room.on(RoomEvent.TranscriptionReceived, handleTranscription);
+    return () => {
+      room.off(RoomEvent.TranscriptionReceived, handleTranscription);
+    };
+  }, [room, meetingId]);
 
   useEffect(() => {
     if (transcriptContainerRef.current) {
-      transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
-    }
-  }, [transcripts, currentText]);
-
-  useEffect(() => {
-    speakerNameRef.current = speakerName;
-  }, [speakerName]);
-
-  const startRecording = useCallback(async () => {
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-      setError('Speech recognition not supported in this browser');
-      return;
-    }
-
-    try {
-      wsRef.current = new WebSocket('ws://localhost:5001');
-
-      await new Promise<void>((resolve, reject) => {
-        if (!wsRef.current) return reject(new Error('No WebSocket'));
-        
-        wsRef.current.onopen = () => {
-          setIsWebSocketConnected(true);
-          wsRef.current?.send(JSON.stringify({
-            type: 'join',
-            meetingId: meetingId,
-            speakerName: speakerNameRef.current
-          }));
-          resolve();
-        };
-
-        wsRef.current.onerror = () => reject(new Error('WebSocket error'));
-        wsRef.current.onclose = () => setIsWebSocketConnected(false);
-
-        wsRef.current.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            
-            if (data.type === 'joined') {
-              console.log('Joined meeting:', data.meetingId);
-            } else if (data.type === 'transcription') {
-              if (data.speaker !== speakerNameRef.current) {
-                const newTranscript: Transcript = {
-                  id: crypto.randomUUID(),
-                  speakerName: data.speaker,
-                  content: data.text,
-                  timestamp: new Date(data.timestamp || Date.now()),
-                };
-                setTranscripts(prev => [newTranscript, ...prev]);
-                
-                fetch('/api/transcription', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    meetingId: data.meetingId,
-                    speakerName: data.speaker,
-                    content: data.text,
-                  }),
-                }).catch(console.error);
-              }
-            } else if (data.type === 'user_left') {
-              console.log('User left:', data.speaker);
-            }
-          } catch (err) {
-            console.error('Error parsing message:', err);
-          }
-        };
+      transcriptContainerRef.current.scrollTo({
+        top: transcriptContainerRef.current.scrollHeight,
+        behavior: 'smooth'
       });
-
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-
-        if (interimTranscript) {
-          setCurrentText(prev => prev + interimTranscript);
-        }
-
-        if (finalTranscript) {
-          setCurrentText(finalTranscript);
-          
-          if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({
-              type: 'transcription',
-              text: finalTranscript,
-              speaker: speakerNameRef.current,
-              meetingId: meetingId,
-              timestamp: new Date().toISOString()
-            }));
-          }
-
-          const newTranscript: Transcript = {
-            id: crypto.randomUUID(),
-            speakerName: speakerNameRef.current,
-            content: finalTranscript,
-            timestamp: new Date(),
-          };
-          
-          setTranscripts(prev => [newTranscript, ...prev]);
-          
-          fetch('/api/transcription', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              meetingId,
-              speakerName: speakerNameRef.current,
-              content: finalTranscript,
-            }),
-          }).catch(console.error);
-        }
-      };
-
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-    } catch (err) {
-      console.error('Failed to start recording:', err);
-      setError('Failed to start recording');
     }
-  }, [meetingId]);
-
-  useEffect(() => {
-    startRecording();
-  }, [startRecording]);
+  }, [transcripts, interimTranscripts]);
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4">
-      {error && (
-        <div className="mb-4 p-3 bg-red-900/50 border border-red-600 rounded text-red-200 text-sm">
-          {error}
-        </div>
-      )}
-      
-      <div className="mb-4">
-        <label className="block text-sm text-gray-400 mb-1">Your Name</label>
-        <input
-          type="text"
-          value={speakerName}
-          onChange={(e) => setSpeakerName(e.target.value)}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-        />
+    <div className="glass-card rounded-2xl p-4 flex flex-col gap-4 border-white/5 bg-obsidian-black/40 overflow-hidden">
+      <div className="flex items-center justify-between border-b border-white/5 pb-3">
+        <h2 className="text-sm font-bold text-chalk-white tracking-tight uppercase opacity-60">Meeting Transcript</h2>
+        <span className="text-[10px] text-aurora-teal font-bold uppercase tracking-widest flex items-center gap-1.5 bg-aurora-teal/10 px-2 py-0.5 rounded-full border border-aurora-teal/20">
+          <span className="w-1.5 h-1.5 bg-aurora-teal rounded-full animate-pulse shadow-[0_0_8px_#00F0FF]"></span>
+          High Precision
+        </span>
       </div>
       
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-white">Live Transcript</h2>
-        {isWebSocketConnected ? (
-          <span className="text-xs text-green-400 flex items-center gap-1">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-            Live
-          </span>
-        ) : (
-          <span className="text-xs text-yellow-400 flex items-center gap-1">
-            <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
-            Connecting...
-          </span>
-        )}
-      </div>
-      
-      <div ref={transcriptContainerRef} className="space-y-3 max-h-96 overflow-y-auto">
+      <div ref={transcriptContainerRef} className="space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+        {/* Render Final Transcripts (Chronological) */}
         {transcripts.map((transcript) => (
-          <div key={transcript.id} className="bg-gray-700 rounded p-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-blue-400">
-                {transcript.speakerName}:
+          <div key={transcript.id} className="flex flex-col gap-1 slide-up">
+            <div className="flex items-center justify-between">
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${transcript.isAI ? 'text-neon-violet' : 'text-aurora-teal'}`}>
+                {transcript.isAI ? 'Agentic AI' : transcript.speakerName === userName ? 'You' : transcript.speakerName}
               </span>
-              <span className="text-xs text-gray-400">
-                [{transcript.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]
+              <span className="text-[9px] text-chalk-white/30 font-mono">
+                {transcript.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
-            <p className="text-white">{transcript.content}</p>
+            <p className={`text-sm text-chalk-white/90 leading-relaxed p-3 rounded-2xl rounded-tl-none border ${transcript.isAI ? 'bg-neon-violet/5 border-neon-violet/30 shadow-[0_0_15px_rgba(176,38,255,0.05)]' : 'bg-white/5 border-white/5'}`}>
+              {transcript.content}
+            </p>
           </div>
         ))}
+
+        {/* Render Interim (Real-time typed) Transcripts AT THE BOTTOM */}
+        {Object.entries(interimTranscripts).map(([id, text]) => {
+          const isUser = id === userName;
+          const isAI = id.toLowerCase().includes('agent') || id.toLowerCase().includes('assistant');
+          
+          return (
+            <div key={`interim-${id}`} className="flex flex-col gap-1 opacity-60 transition-opacity">
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${isAI ? 'text-neon-violet' : 'text-aurora-teal'}`}>
+                {isAI ? 'Agentic AI' : isUser ? 'You' : id} (typing...)
+              </span>
+              <p className="text-sm text-chalk-white/50 italic leading-relaxed px-3 border-l-2 border-white/10">
+                {text}
+              </p>
+            </div>
+          );
+        })}
         
-        {currentText && (
-          <div className="bg-gray-700 rounded p-3">
-            <p className="text-gray-300 italic">{currentText}</p>
+        {transcripts.length === 0 && Object.keys(interimTranscripts).length === 0 && (
+          <div className="flex flex-col items-center justify-center p-8 opacity-20 text-center">
+            <svg className="w-8 h-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+            <p className="text-[10px] uppercase tracking-widest font-bold">Listening for high-precision audio...</p>
           </div>
-        )}
-        
-        {transcripts.length === 0 && !currentText && (
-          <p className="text-gray-500 text-center py-8">
-            Waiting for speech...
-          </p>
         )}
       </div>
       
-      <div className="mt-4 pt-4 border-t border-gray-700">
+      <div className="mt-2 pt-4 border-t border-white/5">
         <Link
           href={`/meeting/${meetingId}/transcripts`}
-          className="block w-full text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white transition-colors"
+          className="group flex items-center justify-between px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all duration-300"
         >
-          View Saved Transcripts
+          <span className="text-xs font-bold text-chalk-white/80 group-hover:text-chalk-white">Session Archive</span>
+          <svg className="w-4 h-4 text-chalk-white/30 group-hover:text-aurora-teal transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
         </Link>
       </div>
     </div>

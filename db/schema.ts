@@ -48,13 +48,10 @@ export const verification = pgTable("verification", {
 
 export const meetings = pgTable("meetings", {
     id: text("id").primaryKey(),
-    title: text("title").notNull(),
-    hostId: text("host_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-    startTime: timestamp("start_time"),
-    endTime: timestamp("end_time"),
-    status: text("status").notNull().default("waiting"),
-    createdAt: timestamp("created_at").notNull(),
-    updatedAt: timestamp("updated_at").notNull(),
+    title: text("title"),
+    hostId: text("host_id"),
+    status: text("status").default("active"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const speakers = pgTable("speakers", {
@@ -83,5 +80,6 @@ export type Verification = typeof verification.$inferSelect;
 export type Meeting = typeof meetings.$inferSelect;
 export type Speaker = typeof speakers.$inferSelect;
 export type Transcript = typeof transcripts.$inferSelect;
+export type NewMeeting = typeof meetings.$inferInsert;
 
 

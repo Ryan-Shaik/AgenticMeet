@@ -17,6 +17,8 @@ import { Track } from "livekit-client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToken } from "@/hooks/useToken";
+import { LiveTranscript } from "./LiveTranscript";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 interface MeetingRoomProps {
   roomName: string;
@@ -53,13 +55,17 @@ export function MeetingRoom({ roomName, userName }: MeetingRoomProps) {
           </div>
 
           {/* AI Sidebar */}
-          <aside className="w-full md:w-80 glass border-l border-white/10 p-6 flex flex-col gap-6 z-20">
+          <aside className="w-full md:w-80 glass border-l border-white/10 p-6 flex flex-col gap-6 z-20 overflow-y-auto custom-scrollbar">
             <div className="flex items-center gap-3">
                <div className="w-3 h-3 rounded-full bg-aurora-teal animate-pulse shadow-[0_0_8px_#00F0FF]" />
                <h3 className="font-bold text-lg tracking-tight text-chalk-white">Agentic AI</h3>
             </div>
 
             <AgentStateView />
+
+            <ErrorBoundary name="LiveTranscript">
+                <LiveTranscript meetingId={roomName} userName={userName} />
+            </ErrorBoundary>
 
             <div className="mt-auto grid grid-cols-1 gap-3 pt-6 border-t border-white/5">
                <ControlBar 
