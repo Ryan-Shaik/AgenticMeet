@@ -22,18 +22,41 @@ export async function POST(req: NextRequest) {
 
   switch (event.type) {
     case 'checkout.session.completed': {
-      const session = event.data.object as unknown as { metadata?: { userId?: string }, subscription?: string };
+      const session = event.data.object as unknown as { 
+        metadata?: { userId?: string, planId?: string }, 
+        subscription?: string 
+      };
       const userId = session.metadata?.userId;
+      const planId = session.metadata?.planId;
       const subscriptionId = session.subscription as string;
 
       if (userId) {
-        await db.update(subscription)
-          .set({
+        const existingSub = await db.select()
+          .from(subscription)
+          .where(eq(subscription.userId, userId))
+          .then(res => res[0]);
+
+        if (existingSub) {
+          await db.update(subscription)
+            .set({
+              stripeSubscriptionId: subscriptionId,
+              status: 'active',
+              planId: planId || existingSub.planId,
+              updatedAt: new Date(),
+            })
+            .where(eq(subscription.id, existingSub.id));
+        } else {
+          await db.insert(subscription).values({
+            id: crypto.randomUUID(),
+            userId,
+            stripeCustomerId: (event.data.object as unknown as { customer?: string }).customer || '',
             stripeSubscriptionId: subscriptionId,
+            planId: planId || 'pro',
             status: 'active',
+            createdAt: new Date(),
             updatedAt: new Date(),
-          })
-          .where(eq(subscription.userId, userId));
+          });
+        }
       }
       break;
     }
