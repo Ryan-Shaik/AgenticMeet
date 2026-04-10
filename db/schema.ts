@@ -74,10 +74,22 @@ export const subscription = pgTable("subscription", {
     updatedAt: timestamp("updated_at").notNull(),
 });
 
+export const usage = pgTable("usage", {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    meetingsUsed: text("meetings_used").notNull().default("0"),
+    minutesUsed: text("minutes_used").notNull().default("0"),
+    periodStart: timestamp("period_start").notNull(),
+    periodEnd: timestamp("period_end").notNull(),
+    createdAt: timestamp("created_at").notNull(),
+    updatedAt: timestamp("updated_at").notNull(),
+});
+
 export const userRelations = relations(user, ({ many }) => ({
     subscriptions: many(subscription),
     sessions: many(session),
     accounts: many(account),
+    usage: many(usage),
 }));
 
 export const subscriptionRelations = relations(subscription, ({ one }) => ({
@@ -88,5 +100,12 @@ export const subscriptionRelations = relations(subscription, ({ one }) => ({
     plan: one(plan, {
         fields: [subscription.planId],
         references: [plan.id],
+    }),
+}));
+
+export const usageRelations = relations(usage, ({ one }) => ({
+    user: one(user, {
+        fields: [usage.userId],
+        references: [user.id],
     }),
 }));
