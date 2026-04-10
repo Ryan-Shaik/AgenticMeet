@@ -7,6 +7,7 @@ import { Button } from "../../components/ui/button";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { ManageSubscriptionButton } from "@/components/dashboard/manage-subscription";
 import Image from "next/image";
 import Link from "next/link";
 import db from "@/db";
@@ -94,7 +95,8 @@ const Dashboard = async () => {
             <h1 className="text-2xl font-bold tracking-tight">Organization Hub</h1>
             <p className="text-sm font-medium text-white/50 mt-1">Welcome back, {session?.user?.name?.split(' ')[0] || "User"}. You have 3 meetings today.</p>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
+            <ManageSubscriptionButton />
             <Link href="/pricing" className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest shadow-[0_0_10px_rgba(0,240,255,0.1)] hover:opacity-80 transition-opacity ${planName === 'free' ? 'bg-white/10 border border-white/20 text-white/70' : planName === 'pro' ? 'bg-aurora-teal/10 border border-aurora-teal/30 text-aurora-teal' : 'bg-neon-violet/10 border border-neon-violet/30 text-neon-violet'}`}>
               <Zap size={12} className={planName === 'pro' ? 'fill-aurora-teal' : planName === 'enterprise' ? 'fill-neon-violet' : ''} /> {planName.charAt(0).toUpperCase() + planName.slice(1)} Plan
             </Link>
