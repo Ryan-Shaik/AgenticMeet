@@ -4,6 +4,43 @@ import db from '@/db';
 import { subscription, user } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const sessionId = searchParams.get('session_id');
+  const success = searchParams.get('success');
+
+  if (sessionId && success === 'true') {
+    try {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      const userId = session.metadata?.userId;
+      const planId = session.metadata?.planId;
+      const subscriptionId = session.subscription as string;
+
+      if (userId) {
+        const existingSub = await db.select()
+          .from(subscription)
+          .where(eq(subscription.userId, userId))
+          .then(res => res[0]);
+
+        if (existingSub) {
+          await db.update(subscription)
+            .set({
+              stripeSubscriptionId: subscriptionId,
+              status: 'active',
+              planId: planId || existingSub.planId,
+              updatedAt: new Date(),
+            })
+            .where(eq(subscription.id, existingSub.id));
+        }
+      }
+    } catch (error) {
+      console.error('Session verification error:', error);
+    }
+  }
+
+  return NextResponse.redirect(new URL('/dashboard', req.url));
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { userId, planId } = await req.json();
@@ -63,7 +100,7 @@ export async function POST(req: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.BETTER_AUTH_URL}/dashboard?success=true`,
+      success_url: `${process.env.BETTER_AUTH_URL}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.BETTER_AUTH_URL}/pricing?canceled=true`,
       metadata: {
         userId,
