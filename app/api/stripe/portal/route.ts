@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await req.json();
+    const { userId, action } = await req.json();
 
     const userSub = await db.select().from(subscription)
       .where(eq(subscription.userId, userId))
@@ -14,6 +14,20 @@ export async function POST(req: NextRequest) {
 
     if (!userSub?.stripeCustomerId) {
       return NextResponse.json({ error: 'No subscription found' }, { status: 404 });
+    }
+
+    if (action === 'cancel') {
+      if (userSub.stripeSubscriptionId) {
+        await stripe.subscriptions.cancel(userSub.stripeSubscriptionId);
+      }
+      await db.update(subscription)
+        .set({
+          status: 'inactive',
+          planId: 'free',
+          updatedAt: new Date(),
+        })
+        .where(eq(subscription.id, userSub.id));
+      return NextResponse.json({ success: true });
     }
 
     const session = await stripe.billingPortal.sessions.create({
