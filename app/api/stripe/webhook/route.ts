@@ -83,7 +83,8 @@ export async function POST(req: NextRequest) {
       const sub = event.data.object as unknown as { id: string };
       await db.update(subscription)
         .set({
-          status: 'canceled',
+          status: 'inactive',
+          planId: 'free',
           updatedAt: new Date(),
         })
         .where(eq(subscription.stripeSubscriptionId, sub.id));
