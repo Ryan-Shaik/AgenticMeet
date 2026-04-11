@@ -8,13 +8,18 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const sessionId = searchParams.get('session_id');
   const success = searchParams.get('success');
+  const planIdParam = searchParams.get('plan');
+
+  console.log('Checkout redirect - sessionId:', sessionId, 'success:', success, 'plan:', planIdParam);
 
   if (sessionId && success === 'true') {
     try {
       const session = await stripe.checkout.sessions.retrieve(sessionId);
       const userId = session.metadata?.userId;
-      const planId = session.metadata?.planId;
+      const planId = planIdParam || session.metadata?.planId;
       const subscriptionId = session.subscription as string;
+
+      console.log('Updating subscription for userId:', userId, 'planId:', planId, 'subId:', subscriptionId);
 
       if (userId) {
         const existingSub = await db.select()
@@ -22,19 +27,40 @@ export async function GET(req: NextRequest) {
           .where(eq(subscription.userId, userId))
           .then(res => res[0]);
 
+        console.log('Existing sub:', existingSub);
+
         if (existingSub) {
           await db.update(subscription)
             .set({
               stripeSubscriptionId: subscriptionId,
               status: 'active',
-              planId: planId || existingSub.planId,
+              planId: planId || 'pro',
               updatedAt: new Date(),
             })
             .where(eq(subscription.id, existingSub.id));
+          console.log('Subscription updated to active');
         }
       }
     } catch (error) {
       console.error('Session verification error:', error);
+    }
+  } else if (planIdParam && success !== 'true') {
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+    if (userId) {
+      const existingSub = await db.select()
+        .from(subscription)
+        .where(eq(subscription.userId, userId))
+        .then(res => res[0]);
+      if (existingSub) {
+        await db.update(subscription)
+          .set({
+            status: 'inactive',
+            planId: 'free',
+            updatedAt: new Date(),
+          })
+          .where(eq(subscription.id, existingSub.id));
+      }
     }
   }
 
@@ -100,8 +126,8 @@ export async function POST(req: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.BETTER_AUTH_URL}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.BETTER_AUTH_URL}/pricing?canceled=true`,
+      success_url: `${process.env.BETTER_AUTH_URL}/api/stripe/checkout?success=true&session_id={CHECKOUT_SESSION_ID}&userId=${userId}&plan=${planId}`,
+      cancel_url: `${process.env.BETTER_AUTH_URL}/api/stripe/checkout?canceled=true&userId=${userId}`,
       metadata: {
         userId,
         planId,
