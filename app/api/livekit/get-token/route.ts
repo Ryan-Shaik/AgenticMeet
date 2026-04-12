@@ -1,6 +1,6 @@
 import { AccessToken } from "livekit-server-sdk";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
+import db from "@/db";
 import { meetings } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { sql } from "drizzle-orm";

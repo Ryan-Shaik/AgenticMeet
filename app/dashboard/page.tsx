@@ -1,7 +1,7 @@
 import { 
   Home, Video, BarChart2, Lightbulb, Settings, 
   Plus, Calendar, Zap, CheckCircle2,
-  Activity, Users, Mic, TrendingUp
+  Activity, Users, Mic, TrendingUp, FileText
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { getSession } from "@/lib/auth";
@@ -13,6 +13,7 @@ import { summaries, meetings } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { InsightsFeed } from "@/components/dashboard/InsightsFeed";
 import { MeetingActivity } from "@/components/dashboard/MeetingActivity";
+import { AnalyticsPanel } from "@/components/dashboard/AnalyticsPanel";
 
 const Dashboard = async () => {
   const session = await getSession();
@@ -59,8 +60,8 @@ const Dashboard = async () => {
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-electric-blue rounded-r-md"></div>
           </a>
           <a href="#" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Meetings"><Video size={22} /></a>
-          <a href="#" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Analytics"><BarChart2 size={22} /></a>
-          <a href="#" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Workflow Automation"><Lightbulb size={22} /></a>
+          <a href="#analytics" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Analytics"><BarChart2 size={22} /></a>
+          <a href="/transcripts" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Transcripts"><FileText size={22} /></a>
         </div>
         <a href="#" className="p-3 rounded-xl hover:bg-white/5 text-white/50 hover:text-white transition-colors" title="Settings"><Settings size={22} /></a>
       </nav>
@@ -178,6 +179,11 @@ const Dashboard = async () => {
                   </div>
                 </div>
              </div>
+          </div>
+
+          {/* Analytics Panel */}
+          <div className="lg:col-span-3 flex flex-col gap-6" id="analytics">
+            <AnalyticsPanel />
           </div>
 
           {/* Analytics Widget (Bottom spans 9 cols) */}

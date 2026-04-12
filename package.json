@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "agent:dev": "tsx watch agent/agent.ts dev"
+    "agent:dev": "tsx -r dotenv/config agent/agent.ts dev"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

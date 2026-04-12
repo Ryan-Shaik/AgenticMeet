@@ -6,8 +6,10 @@ import { generateMeetingSummary } from "@/lib/ai/summarizer";
 import { summaries } from "@/db/schema";
 
 export async function POST(req: Request) {
+  let meetingId = "";
   try {
-    const { meetingId } = await req.json();
+    const body = await req.json();
+    meetingId = body.meetingId;
     const apiKey = req.headers.get("x-api-key");
     const secret = process.env.INTERNAL_API_SECRET || "dev-secret-key";
 
