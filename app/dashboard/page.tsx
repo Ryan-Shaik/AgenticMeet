@@ -1,8 +1,9 @@
-import { 
-  Home, Video, BarChart2, Lightbulb, Settings, 
+import {
+  Home, Video, BarChart2, Lightbulb, Settings,
   Plus, Calendar, Zap, CheckCircle2,
   Activity, Users, Mic, TrendingUp, FileText
 } from "lucide-react";
+import Image from "next/image";
 import { Button } from "../../components/ui/button";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -87,7 +88,7 @@ const Dashboard = async () => {
                 <div className="text-sm font-bold">{session?.user?.name || "User"}</div>
                 <div className="text-xs font-medium text-white/50">Director of Product</div>
               </div>
-              <img src={session?.user?.image || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100"} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-white/10" />
+              <Image src={session?.user?.image || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100"} alt="Avatar" width={40} height={40} className="w-10 h-10 rounded-full border-2 border-white/10" />
             </div>
             <LogoutButton />
           </div>
@@ -116,8 +117,8 @@ const Dashboard = async () => {
                       <h3 className="font-bold text-sm mb-1 text-white leading-tight">V2 Deployment Review</h3>
                       <p className="text-xs text-white/50 mb-3 font-medium">10:00 AM - 11:30 AM</p>
                       <div className="flex -space-x-2">
-                        <img src="https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=100" className="w-6 h-6 rounded-full border border-obsidian-black z-20" alt="User" />
-                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=100" className="w-6 h-6 rounded-full border border-obsidian-black z-10" alt="User" />
+                        <Image src="https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=100" width={24} height={24} className="w-6 h-6 rounded-full border border-obsidian-black z-20" alt="User" />
+                        <Image src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=100" width={24} height={24} className="w-6 h-6 rounded-full border border-obsidian-black z-10" alt="User" />
                         <div className="w-6 h-6 rounded-full border border-obsidian-black bg-white/10 flex items-center justify-center text-[10px] font-bold text-white z-0">+2</div>
                       </div>
                     </div>
@@ -182,12 +183,12 @@ const Dashboard = async () => {
           </div>
 
           {/* Analytics Panel */}
-          <div className="lg:col-span-3 flex flex-col gap-6" id="analytics">
+          <div className="lg:col-span-12 flex flex-col gap-6" id="analytics">
             <AnalyticsPanel />
           </div>
 
-          {/* Analytics Widget (Bottom spans 9 cols) */}
-          <div className="lg:col-span-9 flex flex-col gap-6">
+          {/* Analytics Widget (Bottom spans 12 cols) */}
+          <div className="lg:col-span-12 flex flex-col gap-6">
             <div className="glass-card rounded-3xl p-6 border border-white/5 flex flex-col min-h-[260px] relative overflow-hidden">
                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 relative z-10 gap-4">
                   <div className="flex items-center gap-2">

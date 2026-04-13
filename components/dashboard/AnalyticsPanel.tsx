@@ -40,7 +40,7 @@ export function AnalyticsPanel() {
       <div className="glass-card rounded-3xl p-6 border border-white/5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Activity size={18} className="text-aurora-teal" />
+            <Activity size={18} className="text-aurora-teal drop-shadow-[0_0_8px_rgba(0,240,255,0.4)]" />
             <h2 className="text-white font-bold">Meeting Analytics</h2>
           </div>
         </div>
@@ -58,32 +58,34 @@ export function AnalyticsPanel() {
             <p className="text-xs mt-1">Host a meeting to see analytics</p>
           </div>
         ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
-            {analytics.map((item, idx) => (
-              <button
+          <div className="space-y-0">
+            {analytics.slice(0, 3).map((item, idx) => (
+              <div
                 key={idx}
                 onClick={() => setSelectedMeeting(item.meetingId)}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-aurora-teal/30 transition-all text-left group"
+                className="flex items-center justify-between p-4 border-b border-white/5 hover:bg-white/[0.03] hover:translate-x-1 transition-all cursor-pointer active:scale-95 group last:border-b-0"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-aurora-teal/10 flex items-center justify-center">
-                    <Activity size={14} className="text-aurora-teal" />
+                <div className="flex items-center gap-4">
+                  <div className={`w-3 h-3 rounded-full shadow-lg ${
+                    item.avgEngagementScore > 50 ? 'bg-cyan-400 shadow-cyan-400/50' : 'bg-purple-400 shadow-purple-400/50'
+                  } animate-pulse`}>
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-chalk-white font-mono">
+                    <div className="text-sm font-bold text-chalk-white font-mono">
                       {item.meetingId.substring(0, 10)}...
                     </div>
-                    <div className="text-[10px] text-white/40">
+                    <div className="text-xs text-white/40">
                       {new Date(item.meetingDate).toLocaleDateString()} · {item.speakerCount} speakers
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-aurora-teal font-bold">
-                    {item.avgEngagementScore}%
-                  </span>
+                <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full transition-all duration-300"
+                    style={{ width: `${item.avgEngagementScore}%` }}
+                  />
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
