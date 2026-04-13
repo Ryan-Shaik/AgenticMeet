@@ -1,4 +1,4 @@
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, real, text, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const user =  pgTable("user", {
@@ -46,6 +46,7 @@ export const verification = pgTable("verification", {
     createdAt: timestamp("created_at"),
     updatedAt: timestamp("updated_at"),
 });
+
 
 export const plan = pgTable("plan", {
     id: text("id").primaryKey(),
@@ -111,3 +112,68 @@ export const usageRelations = relations(usage, ({ one }) => ({
         references: [user.id],
     }),
 }));
+
+export const meetings = pgTable("meetings", {
+    id: text("id").primaryKey(),
+    title: text("title"),
+    hostId: text("host_id"),
+    status: text("status").default("active"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const speakers = pgTable("speakers", {
+    id: text("id").primaryKey(),
+    meetingId: text("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    isAI: boolean("is_ai").notNull().default(false),
+    createdAt: timestamp("created_at").notNull(),
+});
+
+export const transcripts = pgTable("transcripts", {
+    id: text("id").primaryKey(),
+    meetingId: text("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
+    speakerId: text("speaker_id").references(() => speakers.id, { onDelete: "set null" }),
+    speakerName: text("speaker_name"),
+    content: text("content").notNull(),
+    timestamp: timestamp("timestamp").notNull(),
+    createdAt: timestamp("created_at").notNull(),
+});
+
+export const summaries = pgTable("summaries", {
+    id: text("id").primaryKey(),
+    meetingId: text("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
+    executiveSummary: text("executive_summary"),
+    topics: jsonb("topics"),
+    actionItems: jsonb("action_items"),
+    decisions: jsonb("decisions"),
+    sentiment: text("sentiment"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const meetingAnalytics = pgTable("meeting_analytics", {
+    id: text("id").primaryKey(),
+    meetingId: text("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
+    speakerId: text("speaker_id").references(() => speakers.id, { onDelete: "set null" }),
+    speakerName: text("speaker_name"),
+    talkTimeMs: integer("talk_time_ms").notNull().default(0),
+    wordCount: integer("word_count").notNull().default(0),
+    speakingTurns: integer("speaking_turns").notNull().default(0),
+    sentimentScore: real("sentiment_score"),
+    engagementScore: real("engagement_score"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type User = typeof user.$inferSelect;
+export type Session = typeof session.$inferSelect;
+export type Account = typeof account.$inferSelect;
+export type Verification = typeof verification.$inferSelect;
+export type Meeting = typeof meetings.$inferSelect;
+export type Speaker = typeof speakers.$inferSelect;
+export type Transcript = typeof transcripts.$inferSelect;
+export type Summary = typeof summaries.$inferSelect;
+export type MeetingAnalytics = typeof meetingAnalytics.$inferSelect;
+export type NewMeeting = typeof meetings.$inferInsert;
+export type NewSummary = typeof summaries.$inferInsert;
+export type NewMeetingAnalytics = typeof meetingAnalytics.$inferInsert;
+

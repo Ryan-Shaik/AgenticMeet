@@ -1,18 +1,22 @@
-import { 
-  Home, Video, BarChart2, Lightbulb, Settings, 
+import {
+  Home, Video, BarChart2, Lightbulb, Settings,
   Plus, Calendar, Zap, CheckCircle2,
-  Activity, Users, Mic, TrendingUp
+  Activity, Users, Mic, TrendingUp, FileText
 } from "lucide-react";
+import Image from "next/image";
 import { Button } from "../../components/ui/button";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { ManageSubscriptionButton } from "@/components/dashboard/manage-subscription";
-import Image from "next/image";
 import Link from "next/link";
-import db from "@/db";
-import { subscription, plan, usage } from "@/db/schema";
-import { eq, and, gte, lt } from "drizzle-orm";
+import { subscription, plan, usage, summaries, meetings } from "@/db/schema";
+import { eq, and, gte, lt, desc } from "drizzle-orm";
+import { StartMeetingButton } from "@/components/dashboard/StartMeetingButton";
+import { db } from "@/db";
+import { InsightsFeed } from "@/components/dashboard/InsightsFeed";
+import { MeetingActivity } from "@/components/dashboard/MeetingActivity";
+import { AnalyticsPanel } from "@/components/dashboard/AnalyticsPanel";
 
 async function getSubscriptionData(userId: string) {
   const userSubscription = await db
@@ -67,6 +71,33 @@ const Dashboard = async () => {
   const minuteLimit = isActive && subData?.plan?.minuteLimit ? parseInt(subData.plan.minuteLimit) : -1;
   const aiLimit = isActive && subData?.plan?.aiLimit ? parseInt(subData.plan.aiLimit) : -1;
   
+  const insights = await db
+    .select({
+      id: summaries.id,
+      meetingTitle: meetings.title,
+      executiveSummary: summaries.executiveSummary,
+      sentiment: summaries.sentiment,
+      createdAt: summaries.createdAt,
+      topics: summaries.topics,
+      actionItems: summaries.actionItems,
+      decisions: summaries.decisions,
+    })
+    .from(summaries)
+    .leftJoin(meetings, eq(summaries.meetingId, meetings.id))
+    .orderBy(desc(summaries.createdAt))
+    .limit(10);
+
+  const recentMeetings = await db
+    .select({
+      id: meetings.id,
+      title: meetings.title,
+      status: meetings.status,
+      createdAt: meetings.createdAt,
+    })
+    .from(meetings)
+    .orderBy(desc(meetings.createdAt))
+    .limit(5);
+
   return (
     <div className="min-h-screen bg-obsidian-black text-chalk-white font-sans flex overflow-hidden">
       
@@ -81,8 +112,8 @@ const Dashboard = async () => {
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-electric-blue rounded-r-md"></div>
           </a>
           <a href="#" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Meetings"><Video size={22} /></a>
-          <a href="#" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Analytics"><BarChart2 size={22} /></a>
-          <a href="#" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Workflow Automation"><Lightbulb size={22} /></a>
+          <a href="#analytics" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Analytics"><BarChart2 size={22} /></a>
+          <a href="/transcripts" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Transcripts"><FileText size={22} /></a>
         </div>
         <a href="#" className="p-3 rounded-xl hover:bg-white/5 text-white/50 hover:text-white transition-colors" title="Settings"><Settings size={22} /></a>
       </nav>
@@ -138,78 +169,22 @@ const Dashboard = async () => {
                       <h3 className="font-bold text-sm mb-1 text-white leading-tight">V2 Deployment Review</h3>
                       <p className="text-xs text-white/50 mb-3 font-medium">10:00 AM - 11:30 AM</p>
                       <div className="flex -space-x-2">
-                        <Image src="https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=100" alt="User" width={24} height={24} className="w-6 h-6 rounded-full border border-obsidian-black z-20" />
-                        <Image src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=100" alt="User" width={24} height={24} className="w-6 h-6 rounded-full border border-obsidian-black z-10" />
+                        <Image src="https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=100" width={24} height={24} className="w-6 h-6 rounded-full border border-obsidian-black z-20" alt="User" />
+                        <Image src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=100" width={24} height={24} className="w-6 h-6 rounded-full border border-obsidian-black z-10" alt="User" />
                         <div className="w-6 h-6 rounded-full border border-obsidian-black bg-white/10 flex items-center justify-center text-[10px] font-bold text-white z-0">+2</div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <Button variant="neon" className="w-full">
-                  <Plus size={18} /> Start Meeting with AI Agent
-                </Button>
+                <StartMeetingButton />
               </div>
             </div>
           </div>
 
           {/* AI Intelligence Feed (Center Top) */}
           <div className="lg:col-span-5 flex flex-col gap-6">
-             <div className="glass-card rounded-3xl p-6 border border-white/5 h-full flex flex-col">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-2">
-                    <Zap size={18} className="text-aurora-teal" />
-                    <h2 className="text-white font-bold text-lg">Agentic Insights Feed</h2>
-                  </div>
-                  <button className="text-xs font-semibold text-white/50 hover:text-white transition-colors">View All</button>
-                </div>
-
-                <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-                  {/* Insight Card 1 */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/5 hover:border-aurora-teal/30 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-2 h-2 rounded-full bg-electric-blue"></div>
-                      <span className="text-xs font-bold text-white/70">Project Apollo Sync</span>
-                      <span className="text-[10px] uppercase font-bold text-white/30 ml-auto">2 hours ago</span>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex gap-3">
-                        <CheckCircle2 size={16} className="text-aurora-teal shrink-0 mt-0.5" />
-                        <p className="text-sm font-medium text-white/90 leading-tight">3 Action Items assigned to Sarah for backend refactor.</p>
-                      </div>
-                      <div className="flex gap-3">
-                        <Activity size={16} className="text-neon-violet shrink-0 mt-0.5" />
-                        <p className="text-sm font-medium text-white/90 leading-tight">Decisions Made: Q4 Budget Approved.</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/5 border border-white/5 text-[10px] font-bold text-white/60">
-                        Sentiment <span className="text-aurora-teal">Positive ↑</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Insight Card 2 */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/5 hover:border-aurora-teal/30 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-2 h-2 rounded-full bg-neon-violet"></div>
-                      <span className="text-xs font-bold text-white/70">Marketing Standup</span>
-                      <span className="text-[10px] uppercase font-bold text-white/30 ml-auto">5 hours ago</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex gap-3">
-                        <CheckCircle2 size={16} className="text-aurora-teal shrink-0 mt-0.5" />
-                        <p className="text-sm font-medium text-white/90 leading-tight">Michael leading campaign redesign.</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/5 border border-white/5 text-[10px] font-bold text-white/60">
-                        Sentiment <span className="text-white/80">Neutral →</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-             </div>
+             <InsightsFeed initialInsights={insights} />
           </div>
 
           {/* Live Meeting Activity (Right) */}
@@ -259,56 +234,66 @@ const Dashboard = async () => {
              </div>
           </div>
 
-           {/* Analytics Widget (Bottom spans 9 cols) */}
-          <div className="lg:col-span-9 flex flex-col gap-6">
-            {/* Usage & Plan Info Card */}
-            <div className="glass-card rounded-3xl p-6 border border-white/5 flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Zap size={18} className="text-aurora-teal" />
-                  <h2 className="text-white font-bold text-lg">Your Subscription</h2>
-                </div>
-                <Link href="/pricing" className="text-xs font-semibold text-aurora-teal hover:text-white transition-colors">
-                  Upgrade Plan
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-xs font-bold text-white/50 uppercase mb-1">Current Plan</div>
-                  <div className="text-xl font-bold text-aurora-teal">{planName.charAt(0).toUpperCase() + planName.slice(1)}</div>
-                  <div className="text-xs text-white/50">${planPrice}/month</div>
-                </div>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-xs font-bold text-white/50 uppercase mb-1">Meetings Used</div>
-                  <div className="text-xl font-bold text-white">
-                    {meetingsUsed} {meetingLimit === -1 ? '' : `/ ${meetingLimit}`}
+          <div className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+            {/* Analytics Panel */}
+            <div className="lg:col-span-6 flex flex-col gap-6" id="analytics">
+              <AnalyticsPanel />
+            </div>
+
+            {/* Application Plan Trackers */}
+            <div className="lg:col-span-6 flex flex-col gap-6">
+              {/* Usage & Plan Info Card */}
+              <div className="glass-card rounded-3xl p-6 border border-white/5 flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Zap size={18} className="text-aurora-teal" />
+                    <h2 className="text-white font-bold text-lg">Your Subscription</h2>
                   </div>
-                  <div className="text-xs text-white/50">{meetingLimit === -1 ? 'Unlimited' : meetingLimit - meetingsUsed + ' remaining'}</div>
+                  <Link href="/pricing" className="text-xs font-semibold text-aurora-teal hover:text-white transition-colors">
+                    Upgrade Plan
+                  </Link>
                 </div>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-xs font-bold text-white/50 uppercase mb-1">AI Minutes Used</div>
-                  <div className="text-xl font-bold text-white">
-                    {minutesUsed} {minuteLimit === -1 ? '' : `/ ${minuteLimit}`}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="text-xs font-bold text-white/50 uppercase mb-1">Current Plan</div>
+                    <div className="text-xl font-bold text-aurora-teal">{planName.charAt(0).toUpperCase() + planName.slice(1)}</div>
+                    <div className="text-xs text-white/50">${planPrice}/month</div>
                   </div>
-                  <div className="text-xs text-white/50">{minuteLimit === -1 ? 'Unlimited' : minuteLimit - minutesUsed + ' remaining'}</div>
-                </div>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-xs font-bold text-white/50 uppercase mb-1">AI Interactions</div>
-                  <div className="text-xl font-bold text-white">
-                    {aiInteractionsUsed} {aiLimit === -1 ? '' : `/ ${aiLimit}`}
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="text-xs font-bold text-white/50 uppercase mb-1">Status</div>
+                    <div className={`text-xl font-bold ${subData?.status === 'active' ? 'text-aurora-teal' : 'text-red-400'}`}>
+                      {subData?.status === 'active' ? 'Active' : 'Inactive'}
+                    </div>
+                    <div className="text-xs text-white/50">{subData?.status === 'active' ? 'Subscribed' : 'Upgrade to enable'}</div>
                   </div>
-                  <div className="text-xs text-white/50">{aiLimit === -1 ? 'Unlimited' : aiLimit - aiInteractionsUsed + ' remaining'}</div>
-                </div>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-xs font-bold text-white/50 uppercase mb-1">Status</div>
-                  <div className={`text-xl font-bold ${subData?.status === 'active' ? 'text-aurora-teal' : 'text-red-400'}`}>
-                    {subData?.status === 'active' ? 'Active' : 'Inactive'}
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="text-xs font-bold text-white/50 uppercase mb-1">Meetings Used</div>
+                    <div className="text-xl font-bold text-white">
+                      {meetingsUsed} {meetingLimit === -1 ? '' : `/ ${meetingLimit}`}
+                    </div>
+                    <div className="text-xs text-white/50">{meetingLimit === -1 ? 'Unlimited' : meetingLimit - meetingsUsed + ' remaining'}</div>
                   </div>
-                  <div className="text-xs text-white/50">{subData?.status === 'active' ? 'Subscribed' : 'Upgrade to enable'}</div>
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="text-xs font-bold text-white/50 uppercase mb-1">AI Minutes Used</div>
+                    <div className="text-xl font-bold text-white">
+                      {minutesUsed} {minuteLimit === -1 ? '' : `/ ${minuteLimit}`}
+                    </div>
+                    <div className="text-xs text-white/50">{minuteLimit === -1 ? 'Unlimited' : minuteLimit - minutesUsed + ' remaining'}</div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="text-xs font-bold text-white/50 uppercase mb-1">AI Interactions</div>
+                    <div className="text-xl font-bold text-white">
+                      {aiInteractionsUsed} {aiLimit === -1 ? '' : `/ ${aiLimit}`}
+                    </div>
+                    <div className="text-xs text-white/50">{aiLimit === -1 ? 'Unlimited' : aiLimit - aiInteractionsUsed + ' remaining'}</div>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
 
+          {/* Analytics Widget (Bottom spans 12 cols) */}
+          <div className="lg:col-span-12 flex flex-col gap-6 mt-6">
             <div className="glass-card rounded-3xl p-6 border border-white/5 flex flex-col min-h-[260px] relative overflow-hidden">
                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 relative z-10 gap-4">
                   <div className="flex items-center gap-2">
