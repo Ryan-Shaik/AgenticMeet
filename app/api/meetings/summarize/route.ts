@@ -4,6 +4,7 @@ import { meetings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { generateMeetingSummary } from "@/lib/ai/summarizer";
 import { summaries } from "@/db/schema";
+import { checkAccess } from "@/lib/subscription";
 
 export async function POST(req: Request) {
   let meetingId: string = 'unknown';
@@ -20,6 +21,20 @@ export async function POST(req: Request) {
 
     if (!meetingId) {
       return NextResponse.json({ error: "Meeting ID is required" }, { status: 400 });
+    }
+
+    const meetingRecord = await db.select().from(meetings).where(eq(meetings.id, meetingId)).then(r => r[0]);
+    if (!meetingRecord) {
+      return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+    }
+
+    // Enforce Module 1/2 AI limits before running heavy summarization pipeline
+    if (meetingRecord.hostId) {
+      const access = await checkAccess(meetingRecord.hostId, "ai");
+      if (!access.allowed) {
+        console.warn(`[Summarize] Blocked AI summary generation for meeting ${meetingId}. Reason: ${access.reason}`);
+        return NextResponse.json({ error: access.reason || "AI interaction limit exceeded" }, { status: 403 });
+      }
     }
 
     console.log(`[Summarize] Starting summary generation for meeting: ${meetingId}`);

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "@/db";
-import { transcripts } from "@/db/schema";
+import { db } from "@/db";
+import { transcripts, meetings } from "@/db/schema";
 import { eq, desc, asc } from "drizzle-orm";
 import { generateAIResponse } from "@/lib/ai/response";
+import { checkAccess } from "@/lib/subscription";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,6 +12,21 @@ export async function POST(req: NextRequest) {
     if (!meetingId) {
       return NextResponse.json({ error: "Meeting ID required" }, { status: 400 });
     }
+
+    // Identify the host of the meeting
+    const meetingRecord = await db.select().from(meetings).where(eq(meetings.id, meetingId)).then(r => r[0]);
+    if (!meetingRecord) {
+      return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+    }
+
+    // Enforce Module 1/2 limits for AI usage
+    if (meetingRecord.hostId) {
+      const access = await checkAccess(meetingRecord.hostId, "ai");
+      if (!access.allowed) {
+        return NextResponse.json({ error: access.reason || "AI interaction limit exceeded" }, { status: 403 });
+      }
+    }
+
 
     const meetingTranscripts = await db
       .select()
