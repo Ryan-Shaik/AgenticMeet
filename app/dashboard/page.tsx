@@ -48,7 +48,7 @@ async function getSubscriptionData(userId: string) {
   return {
     status: userSubscription.status,
     plan: userPlan,
-    usage: userUsage || { meetingsUsed: '0', minutesUsed: '0' },
+    usage: userUsage || { meetingsUsed: '0', minutesUsed: '0', aiInteractionsUsed: '0' },
   };
 }
 
@@ -62,8 +62,11 @@ const Dashboard = async () => {
   const planPrice = isActive ? (subData?.plan?.price || '0') : '0';
   const meetingsUsed = parseInt(subData?.usage?.meetingsUsed || '0');
   const minutesUsed = parseInt(subData?.usage?.minutesUsed || '0');
+  const aiInteractionsUsed = parseInt(subData?.usage?.aiInteractionsUsed || '0');
   const meetingLimit = isActive && subData?.plan?.meetingLimit ? parseInt(subData.plan.meetingLimit) : -1;
   const minuteLimit = isActive && subData?.plan?.minuteLimit ? parseInt(subData.plan.minuteLimit) : -1;
+  const aiLimit = isActive && subData?.plan?.aiLimit ? parseInt(subData.plan.aiLimit) : -1;
+  
   return (
     <div className="min-h-screen bg-obsidian-black text-chalk-white font-sans flex overflow-hidden">
       
@@ -269,7 +272,7 @@ const Dashboard = async () => {
                   Upgrade Plan
                 </Link>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                   <div className="text-xs font-bold text-white/50 uppercase mb-1">Current Plan</div>
                   <div className="text-xl font-bold text-aurora-teal">{planName.charAt(0).toUpperCase() + planName.slice(1)}</div>
@@ -288,6 +291,13 @@ const Dashboard = async () => {
                     {minutesUsed} {minuteLimit === -1 ? '' : `/ ${minuteLimit}`}
                   </div>
                   <div className="text-xs text-white/50">{minuteLimit === -1 ? 'Unlimited' : minuteLimit - minutesUsed + ' remaining'}</div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="text-xs font-bold text-white/50 uppercase mb-1">AI Interactions</div>
+                  <div className="text-xl font-bold text-white">
+                    {aiInteractionsUsed} {aiLimit === -1 ? '' : `/ ${aiLimit}`}
+                  </div>
+                  <div className="text-xs text-white/50">{aiLimit === -1 ? 'Unlimited' : aiLimit - aiInteractionsUsed + ' remaining'}</div>
                 </div>
                 <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                   <div className="text-xs font-bold text-white/50 uppercase mb-1">Status</div>
@@ -345,4 +355,3 @@ const Dashboard = async () => {
 }
 
 export default Dashboard;
-

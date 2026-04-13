@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
         userId,
         meetingsUsed: '0',
         minutesUsed: '0',
+        aiInteractionsUsed: '0',
         periodStart,
         periodEnd,
         createdAt: new Date(),
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
         userId,
         meetingsUsed: '0',
         minutesUsed: '0',
+        aiInteractionsUsed: '0',
         periodStart,
         periodEnd,
         createdAt: new Date(),
@@ -76,9 +78,11 @@ export async function POST(req: NextRequest) {
 
     const meetingsUsed = parseInt(currentUsage.meetingsUsed) || 0;
     const minutesUsed = parseInt(currentUsage.minutesUsed) || 0;
+    const aiInteractionsUsed = parseInt(currentUsage.aiInteractionsUsed) || 0;
 
     const meetingLimit = userPlan.meetingLimit ? parseInt(userPlan.meetingLimit) : -1;
     const minuteLimit = userPlan.minuteLimit ? parseInt(userPlan.minuteLimit) : -1;
+    const aiLimit = userPlan.aiLimit ? parseInt(userPlan.aiLimit) : -1;
 
     if (action === 'meeting') {
       if (meetingLimit !== -1 && meetingsUsed >= meetingLimit) {
@@ -112,13 +116,31 @@ export async function POST(req: NextRequest) {
         .where(eq(usage.id, currentUsage.id));
     }
 
+    if (action === 'ai') {
+      if (aiLimit !== -1 && aiInteractionsUsed >= aiLimit) {
+        return NextResponse.json({
+          allowed: false,
+          reason: `AI interaction limit exceeded. Limit: ${aiLimit} per month.`,
+        });
+      }
+      await db
+        .update(usage)
+        .set({
+          aiInteractionsUsed: String(aiInteractionsUsed + amount),
+          updatedAt: new Date(),
+        })
+        .where(eq(usage.id, currentUsage.id));
+    }
+
     return NextResponse.json({
       allowed: true,
       usage: {
         meetingsUsed: meetingsUsed + (action === 'meeting' ? amount : 0),
         minutesUsed: minutesUsed + (action === 'minute' ? amount : 0),
+        aiInteractionsUsed: aiInteractionsUsed + (action === 'ai' ? amount : 0),
         meetingLimit,
         minuteLimit,
+        aiLimit,
       },
     });
   } catch (error) {

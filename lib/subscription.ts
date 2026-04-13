@@ -3,6 +3,7 @@ export type PlanLimit = {
   planName: string;
   meetingLimit: number;
   minuteLimit: number;
+  aiLimit: number;
 };
 
 export type UserSubscription = {
@@ -11,6 +12,7 @@ export type UserSubscription = {
   usage: {
     meetingsUsed: number;
     minutesUsed: number;
+    aiInteractionsUsed: number;
   };
 };
 
@@ -37,15 +39,16 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
         planName: data.plan.name,
         meetingLimit: data.plan.meetingLimit ? parseInt(data.plan.meetingLimit) : -1,
         minuteLimit: data.plan.minuteLimit ? parseInt(data.plan.minuteLimit) : -1,
+        aiLimit: data.plan.aiLimit ? parseInt(data.plan.aiLimit) : -1,
       } : null,
-      usage: data.usage || { meetingsUsed: 0, minutesUsed: 0 },
+      usage: data.usage || { meetingsUsed: 0, minutesUsed: 0, aiInteractionsUsed: 0 },
     };
   } catch {
     return null;
   }
 }
 
-export async function checkAccess(userId: string, action: 'meeting' | 'minute'): Promise<{ allowed: boolean; reason?: string }> {
+export async function checkAccess(userId: string, action: 'meeting' | 'minute' | 'ai'): Promise<{ allowed: boolean; reason?: string }> {
   try {
     const res = await fetch(`${process.env.BETTER_AUTH_URL}/api/usage/check`, {
       method: 'POST',
