@@ -6,8 +6,10 @@ import { generateMeetingSummary } from "@/lib/ai/summarizer";
 import { summaries } from "@/db/schema";
 
 export async function POST(req: Request) {
+  let meetingId: string = 'unknown';
   try {
-    const { meetingId } = await req.json();
+    const body = await req.json();
+    meetingId = body.meetingId;
     const apiKey = req.headers.get("x-api-key");
     const secret = process.env.INTERNAL_API_SECRET || "dev-secret-key";
 
@@ -58,15 +60,17 @@ export async function POST(req: Request) {
       summaryId,
       summary
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const stack = error instanceof Error ? error.stack : undefined;
     console.error("[Summarize] Error details:", {
-        message: error.message,
-        stack: error.stack,
+        message,
+        stack,
         meetingId
     });
-    return NextResponse.json({ 
+    return NextResponse.json({
         error: "Internal Server Error",
-        details: error.message 
+        details: message
     }, { status: 500 });
   }
 }
