@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, use } from "react";
 import { useSession } from "@/lib/auth-client";
 import { SavedTranscripts } from "@/components/SavedTranscripts";
+import { MeetingAnalytics } from "@/components/MeetingAnalytics";
 
 export default function TranscriptsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -35,6 +36,8 @@ export default function TranscriptsPage({ params }: { params: Promise<{ id: stri
                 <h1 className="text-3xl font-serif font-bold text-chalk-white tracking-tight">Meeting Archive</h1>
                 <p className="text-sm text-chalk-white/40 font-medium">Reviewing session records for <span className="text-chalk-white/60 font-mono">#{id}</span></p>
             </header>
+
+            <MeetingAnalytics meetingId={id} />
 
             <div className="glass-card rounded-3xl border-white/5 overflow-hidden">
                 <SavedTranscripts meetingId={id} />

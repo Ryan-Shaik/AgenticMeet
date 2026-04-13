@@ -1,94 +1,77 @@
-import * as dotenv from 'dotenv';
-dotenv.config();
+import 'dotenv/config';
 
 import {
   type JobContext,
-  type JobProcess,
   ServerOptions,
   cli,
   defineAgent,
   voice,
 } from '@livekit/agents';
 import * as google from '@livekit/agents-plugin-google';
-import * as silero from '@livekit/agents-plugin-silero';
 import { fileURLToPath } from 'node:url';
 
-/**
- * AgenticMeet AI Assistant
- * This agent joins AgenticMeet video conferences and provides real-time intelligent interaction.
- */
 class AgenticMeetAssistant extends voice.Agent {
   async onEnter() {
-    // Initial greeting when the agent enters the room
+    console.log('[AgenticMeet] Agent joined meeting');
     this.session.generateReply({
-      instructions: "Greet the participants warmly and introduce yourself as the AgenticMeet AI Assistant. Mention that you're here to help with notes, summaries, and real-time support.",
+      instructions: "Say hello to everyone. Introduce yourself as the AgenticMeet AI Assistant. Let them know you're here to help take notes and answer questions.",
     });
   }
 
   static create() {
     return new AgenticMeetAssistant({
-      instructions: `You are the AgenticMeet AI Assistant, a core member of the meeting. 
-      Your persona is professional, ultra-intelligent, and helpful. 
-      Active tasks:
-      1. Listen to the conversation and provide context-aware responses.
-      2. Keep track of discussion points for the summary (which we will build in Phase 4).
-      3. Be concise and allow natural human flow; don't dominate the conversation.
-      4. If a user interrupts you, stop speaking and listen.`,
+      instructions: `You are the AgenticMeet AI Assistant. 
+Your job is to:
+1. Listen to the conversation
+2. When asked questions, respond helpfully
+3. Offer to take notes or summarize when appropriate
+4. Keep responses short and natural`,
     });
   }
 }
 
 export default defineAgent({
-  prewarm: async (proc: JobProcess) => {
-    // Pre-load VAD to reduce join latency
-    proc.userData.vad = await silero.VAD.load();
-  },
   entry: async (ctx: JobContext) => {
     try {
+      console.log('[AgenticMeet] Joining room:', ctx.room.name);
       await ctx.connect();
-      console.log('Starting AgenticMeet Assistant for room:', ctx.room.name);
 
-      const session = new voice.AgentSession({
-        aecWarmupDuration: 500,
-        llm: new google.beta.realtime.RealtimeModel({
-          model: "gemini-2.5-flash-native-audio-preview-12-2025",
-          voice: "Puck",
-          realtimeInputConfig: {
-            automaticActivityDetection: {
-              silenceDurationMs: 200, // Lower value = faster response
-            },
-          },
-          thinkingConfig: { 
-            includeThoughts: false,
-            thinkingBudget: 0 // Disable thinking for absolute minimum latency
-          },
-        }),
+      const model = new google.beta.realtime.RealtimeModel({
+        model: "gemini-2.0-flash-preview",
+        voice: "Puck",
       });
 
+      const session = new voice.AgentSession({
+        llm: model,
+      });
+
+      console.log('[AgenticMeet] Starting session...');
+      
       await session.start({
         agent: AgenticMeetAssistant.create(),
         room: ctx.room,
       });
 
-      console.log('Agent session started successfully.');
+      console.log('[AgenticMeet] Agent is now active');
 
       await new Promise<void>((resolve) => {
         ctx.room.on('disconnected', () => resolve());
       });
+      
+      console.log('[AgenticMeet] Meeting ended');
     } catch (error) {
-      console.error('Final Agent Error:', error);
+      console.error('[AgenticMeet] Failed:', error);
     }
   },
 });
 
 const __filename = fileURLToPath(import.meta.url);
 
-// Run the agent server
 cli.runApp(new ServerOptions({ 
   agent: __filename,
-  apiKey: process.env.LIVEKIT_API_KEY,
-  apiSecret: process.env.LIVEKIT_API_SECRET,
-  wsURL: process.env.LIVEKIT_URL,
+  apiKey: process.env.LIVEKIT_API_KEY!,
+  apiSecret: process.env.LIVEKIT_API_SECRET!,
+  wsURL: process.env.LIVEKIT_URL!,
   numIdleProcesses: 0,
   initializeProcessTimeout: 60000,
 }));

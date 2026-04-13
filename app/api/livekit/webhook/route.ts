@@ -43,6 +43,13 @@ export async function POST(req: Request) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ meetingId: roomName }),
         }).catch(err => console.error("[Webhook] Failed to trigger summary:", err));
+
+        // Trigger analytics calculation
+        fetch(`${protocol}://${host}/api/meetings/analytics`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ meetingId: roomName }),
+        }).catch(err => console.error("[Webhook] Failed to trigger analytics:", err));
       }
     }
 

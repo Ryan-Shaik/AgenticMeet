@@ -14,7 +14,7 @@ import {
   LayoutContextProvider,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useToken } from "@/hooks/useToken";
 import { LiveTranscript } from "./LiveTranscript";
@@ -33,6 +33,30 @@ export function MeetingRoom({ roomName, userName }: MeetingRoomProps) {
     getToken(roomName, userName);
   }, [roomName, userName, getToken]);
 
+  const handleEndMeeting = useCallback(async () => {
+    try {
+      console.log('[MeetingRoom] Ending meeting:', roomName);
+      
+      // First save current transcripts as AI response if any
+      const res = await fetch('/api/meetings/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meetingId: roomName }),
+      });
+      const data = await res.json();
+      console.log('[MeetingRoom] End response:', data);
+      
+      // Also trigger analytics calculation immediately
+      await fetch('/api/meetings/analytics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meetingId: roomName }),
+      });
+    } catch (e) {
+      console.error('[MeetingRoom] End meeting error:', e);
+    }
+  }, [roomName]);
+
   if (isLoading) return <div className="flex items-center justify-center h-screen bg-obsidian-black text-chalk-white">Connecting to AgenticMeet...</div>;
   if (error) return <div className="text-red-500">Error: {error}</div>;
   if (!token) return <div className="text-chalk-white">Generating secure session...</div>;
@@ -45,7 +69,8 @@ export function MeetingRoom({ roomName, userName }: MeetingRoomProps) {
       serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
       data-lk-theme="default"
       style={{ height: "100dvh" }}
-      onDisconnected={() => {
+      onDisconnected={async () => {
+        await handleEndMeeting();
         router.push("/dashboard");
       }}
     >
@@ -69,14 +94,20 @@ export function MeetingRoom({ roomName, userName }: MeetingRoomProps) {
                 <LiveTranscript meetingId={roomName} userName={userName} />
             </ErrorBoundary>
 
-            <div className="mt-auto grid grid-cols-1 gap-3 pt-6 border-t border-white/5">
-               <ControlBar 
-                 variation="minimal" 
-                 controls={{ microphone: true, camera: true, screenShare: false, settings: true }} 
-               />
-               <DisconnectButton className="lk-button !bg-red-500/20 !text-red-500 hover:!bg-red-500 hover:!text-white border border-red-500/30 transition-all font-bold mt-2">
-                 End Session
-               </DisconnectButton>
+<div className="mt-auto grid grid-cols-1 gap-3 pt-6 border-t border-white/5">
+                <ControlBar 
+                  variation="minimal" 
+                  controls={{ microphone: true, camera: true, screenShare: false, settings: true }} 
+                />
+                <button 
+                  onClick={async () => {
+                    await handleEndMeeting();
+                    window.location.href = "/dashboard";
+                  }}
+                  className="w-full py-3 rounded-xl bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/30 transition-all font-bold mt-2"
+                >
+                  End Session
+                </button>
             </div>
           </aside>
         </div>
