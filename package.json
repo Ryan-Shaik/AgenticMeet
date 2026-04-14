@@ -10,6 +10,7 @@
     "agent:dev": "tsx -r dotenv/config agent/agent.ts dev"
   },
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@google/generative-ai": "^0.24.1",
     "@livekit/agents": "1.2.3",
     "@livekit/agents-plugin-deepgram": "1.2.3",
