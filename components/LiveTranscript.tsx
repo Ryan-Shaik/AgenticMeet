@@ -42,13 +42,11 @@ export function LiveTranscript({ meetingId, userName }: LiveTranscriptProps) {
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onstart = () => {
       console.log('[LiveTranscript] Web Speech recognition started');
       setIsListening(true);
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onend = () => {
       console.log('[LiveTranscript] Web Speech recognition ended');
       setIsListening(false);
@@ -56,7 +54,6 @@ export function LiveTranscript({ meetingId, userName }: LiveTranscriptProps) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onerror = (event: any) => {
-      // Ignore "aborted" - happens when user leaves or mic toggle
       if (event.error === 'aborted') return;
       console.warn('[LiveTranscript] Speech recognition error:', event.error);
     };
@@ -89,7 +86,6 @@ export function LiveTranscript({ meetingId, userName }: LiveTranscriptProps) {
               console.log('[Transcript] Saved:', data);
             }).catch(console.error);
 
-            // Trigger AI response automatically after user speaks
             fetch('/api/ai/chat', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

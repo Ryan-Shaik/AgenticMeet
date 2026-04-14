@@ -98,7 +98,7 @@ export async function calculateMeetingAnalytics(meetingId: string): Promise<Meet
       const speakerName = (t.speakerName || "Unknown").trim();
       
       // Skip AI speakers - only count humans
-      if (speakerName.toLowerCase().includes('agent') || speakerName.toLowerCase().includes('ai')) {
+      if (speakerName.toLowerCase().includes('agent') || speakerName.toLowerCase().includes('assistant')) {
         continue;
       }
       
@@ -130,7 +130,7 @@ export async function calculateMeetingAnalytics(meetingId: string): Promise<Meet
     // Only analyze human transcripts for sentiment
     const humanTranscripts = meetingTranscripts.filter(t => 
       !t.speakerName?.toLowerCase().includes('agent') && 
-      !t.speakerName?.toLowerCase().includes('ai')
+      !t.speakerName?.toLowerCase().includes('assistant')
     );
     const overallSentiment = await analyzeMeetingSentiment(
       humanTranscripts.map(t => t.content).join(" ")

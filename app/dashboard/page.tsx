@@ -157,7 +157,6 @@ const Dashboard = async () => {
                        <Users size={12} /> 4 Participants
                     </p>
                     <div className="flex items-center justify-between text-[11px] font-bold text-aurora-teal border-t border-white/10 pt-3 relative w-full pt-4">
-                      {/* Pulse effect line */}
                       <div className="absolute top-0 left-0 h-px bg-gradient-to-r from-neon-violet to-transparent w-full"></div>
                       <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-aurora-teal animate-pulse"></div> Generating Notes...</span>
                       <span>42m</span>

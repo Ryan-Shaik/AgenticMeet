@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/db";
-import { meetingAnalytics, meetings } from "@/db/schema";
+import { meetingAnalytics, meetings, summaries } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { calculateMeetingAnalytics } from "@/lib/ai/analytics";
 
@@ -58,6 +58,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
     }
 
+    const summary = await db
+      .select()
+      .from(summaries)
+      .where(eq(summaries.meetingId, meetingId))
+      .then(rows => rows[0]);
+
     const allAnalytics = await db
       .select()
       .from(meetingAnalytics)
@@ -67,7 +73,6 @@ export async function GET(req: NextRequest) {
     // Filter out AI speakers in code
     const analytics = allAnalytics.filter(a => 
       !a.speakerName?.toLowerCase().includes('agent') && 
-      !a.speakerName?.toLowerCase().includes('ai') &&
       !a.speakerName?.toLowerCase().includes('assistant')
     );
 
@@ -94,7 +99,7 @@ export async function GET(req: NextRequest) {
           totalSpeakingTurns: totalTurns,
           speakerCount: speakerCount,
           avgEngagementScore: Math.round(avgEngagement),
-          overallSentiment: "neutral"
+          overallSentiment: summary?.sentiment || "neutral"
         }
       }
     });

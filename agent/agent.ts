@@ -37,7 +37,7 @@ export default defineAgent({
       await ctx.connect();
 
       const model = new google.beta.realtime.RealtimeModel({
-        model: "gemini-2.0-flash-preview",
+        model: "gemini-3.1-flash-live-preview",
         voice: "Puck",
       });
 

@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/db";
-import { meetingAnalytics } from "@/db/schema";
-import { desc, sql, eq } from "drizzle-orm";
+import { meetingAnalytics, summaries, meetings } from "@/db/schema";
+import { desc, sql, eq, and } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   try {
+    // Get all meetings that have analytics, ordered by meeting creation date (newest first)
     const analytics = await db
       .select({
         meetingId: meetingAnalytics.meetingId,
-        meetingDate: sql`max(${meetingAnalytics.createdAt})`,
+        meetingDate: meetings.createdAt,
         totalTalkTime: sql`sum(${meetingAnalytics.talkTimeMs})`,
         totalWords: sql`sum(${meetingAnalytics.wordCount})`,
         engagement: sql`avg(${meetingAnalytics.engagementScore})`,
       })
       .from(meetingAnalytics)
-      .groupBy(meetingAnalytics.meetingId)
-      .orderBy(desc(sql`max(${meetingAnalytics.createdAt})`))
+      .innerJoin(meetings, eq(meetings.id, meetingAnalytics.meetingId))
+      .groupBy(meetingAnalytics.meetingId, meetings.createdAt)
+      .orderBy(desc(meetings.createdAt))
       .limit(20);
 
     // Filter and count unique human speakers in code
@@ -29,8 +31,14 @@ export async function GET(req: NextRequest) {
       const uniqueHumans = new Set(
         speakers
           .map(s => s.speakerName?.trim() || "")
-          .filter(name => !name?.toLowerCase().includes('agent'))
+          .filter(name => !name?.toLowerCase().includes('agent') && !name?.toLowerCase().includes('assistant'))
       );
+
+      const summary = await db
+        .select({ sentiment: summaries.sentiment })
+        .from(summaries)
+        .where(eq(summaries.meetingId, a.meetingId))
+        .then(rows => rows[0]);
       
       history.push({
         meetingId: a.meetingId,
@@ -39,6 +47,7 @@ export async function GET(req: NextRequest) {
         totalTalkTimeMs: Number(a.totalTalkTime || 0),
         totalWords: Number(a.totalWords || 0),
         avgEngagementScore: Math.round(Number(a.engagement || 0)),
+        sentiment: summary?.sentiment || null,
       });
     }
 
