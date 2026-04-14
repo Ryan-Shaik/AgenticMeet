@@ -161,18 +161,36 @@ export async function calculateMeetingAnalytics(meetingId: string): Promise<Meet
     const overallEngagement = calculateEngagement(speakerStats);
 
     for (const stat of speakerStats) {
-      await db.insert(meetingAnalytics).values({
-        id: crypto.randomUUID(),
-        meetingId,
-        speakerId: stat.speakerId,
-        speakerName: stat.speakerName,
-        talkTimeMs: stat.talkTimeMs,
-        wordCount: stat.wordCount,
-        speakingTurns: stat.speakingTurns,
-        sentimentScore: null,
-        engagementScore: calculateIndividualEngagement(stat, speakerStats),
-        createdAt: new Date(),
-      });
+      const existing = await db
+        .select()
+        .from(meetingAnalytics)
+        .where(eq(meetingAnalytics.meetingId, meetingId))
+        .then(rows => rows.find(r => r.speakerId === stat.speakerId));
+
+      if (existing) {
+        await db
+          .update(meetingAnalytics)
+          .set({
+            talkTimeMs: stat.talkTimeMs,
+            wordCount: stat.wordCount,
+            speakingTurns: stat.speakingTurns,
+            engagementScore: calculateIndividualEngagement(stat, speakerStats),
+          })
+          .where(eq(meetingAnalytics.id, existing.id));
+      } else {
+        await db.insert(meetingAnalytics).values({
+          id: crypto.randomUUID(),
+          meetingId,
+          speakerId: stat.speakerId,
+          speakerName: stat.speakerName,
+          talkTimeMs: stat.talkTimeMs,
+          wordCount: stat.wordCount,
+          speakingTurns: stat.speakingTurns,
+          sentimentScore: null,
+          engagementScore: calculateIndividualEngagement(stat, speakerStats),
+          createdAt: new Date(),
+        });
+      }
     }
 
     return {
