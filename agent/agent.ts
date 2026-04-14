@@ -1,4 +1,7 @@
 import 'dotenv/config';
+import ffmpeg from '@ffmpeg-installer/ffmpeg';
+process.env.FFMPEG_PATH = ffmpeg.path;
+console.log('[AgenticMeet] Setting FFMPEG_PATH to:', ffmpeg.path);
 
 import {
   type JobContext,
