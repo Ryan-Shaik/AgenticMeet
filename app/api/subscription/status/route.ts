@@ -36,10 +36,23 @@ export async function GET(req: NextRequest) {
       .then(res => res[0]);
 
     if (!userSubscription) {
+      // Return a default free plan for new users who aren't in the subscription table yet
       return NextResponse.json({
-        status: 'inactive',
-        plan: null,
-        usage: null,
+        subscription: {
+          id: 'temp-free-' + userId,
+          status: 'active', // Show as active so they can use the app
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+        },
+        plan: {
+          id: 'free',
+          name: 'Free',
+          price: '0',
+          interval: 'forever',
+          meetingLimit: '5',
+          minuteLimit: '10',
+        },
+        usage: { meetingsUsed: 0, minutesUsed: 0 },
       });
     }
 

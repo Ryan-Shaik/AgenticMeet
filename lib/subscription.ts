@@ -28,7 +28,7 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
     
     const data = await res.json();
     
-    if (data.status === 'inactive' || !data.subscription) {
+    if (!data.subscription || (data.subscription.status === 'inactive' && !data.plan)) {
       return null;
     }
     
