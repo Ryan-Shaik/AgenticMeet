@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "../components/ui/button";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import Image from "next/image";
 
 const Home = async () => {
   const session = await getSession();
@@ -27,7 +28,7 @@ const Home = async () => {
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-chalk-white/80">
             <a href="#features" className="hover:text-aurora-teal transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-aurora-teal transition-colors">Pricing</a>
+            <Link href="/pricing" className="hover:text-aurora-teal transition-colors">Pricing</Link>
             <a href="#enterprise" className="hover:text-aurora-teal transition-colors">Enterprise</a>
           </div>
 
@@ -75,14 +76,14 @@ const Home = async () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 mb-6">
             {/* Person 1 */}
             <div className="relative aspect-video rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700">
-              <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800" alt="Person 1" className="w-full h-full object-cover" />
+              <Image src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800" alt="Person 1" fill className="object-cover" />
               <div className="absolute bottom-3 left-3 px-3 py-1 bg-obsidian-black/60 rounded-md text-xs font-medium backdrop-blur-md">
                 Sarah Jenkins
               </div>
             </div>
             {/* Person 2 */}
             <div className="relative aspect-video rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700 mx-auto w-full">
-              <img src="https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=800" alt="Person 2" className="w-full h-full object-cover" />
+              <Image src="https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=800" alt="Person 2" fill className="object-cover" />
               <div className="absolute bottom-3 left-3 px-3 py-1 bg-obsidian-black/60 rounded-md text-xs font-medium backdrop-blur-md">
                 Michael Chen
               </div>
@@ -90,7 +91,7 @@ const Home = async () => {
             </div>
             {/* Person 3 */}
             <div className="relative aspect-video rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700">
-              <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=800" alt="Person 3" className="w-full h-full object-cover" />
+              <Image src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=800" alt="Person 3" fill className="object-cover" />
               <div className="absolute bottom-3 left-3 px-3 py-1 bg-obsidian-black/60 rounded-md text-xs font-medium backdrop-blur-md">
                 Elena Rodriguez
               </div>
@@ -116,20 +117,20 @@ const Home = async () => {
                Live Transcript
              </div>
              <div className="mt-6 md:mt-4 h-full overflow-hidden relative opacity-90">
-               <div className="animate-scroll flex flex-col gap-3 text-sm md:text-base text-aurora-teal/90">
-                 <p><span className="font-semibold text-chalk-white">Michael:</span> Let's review the deployment schedule for V2.</p>
-                 <p><span className="font-semibold text-chalk-white">Elena:</span> I'm ready. The backend is fully scalable now.</p>
-                 <p><span className="font-semibold text-chalk-white">Sarah:</span> Can someone take notes on the action items?</p>
-                 <p><span className="font-semibold text-neon-violet">Agentic AI:</span> I will automatically extract all action items and decisions made during this discussion and generate a structured summary.</p>
-                 <p><span className="font-semibold text-chalk-white">Michael:</span> Excellent. Let's move on to the marketing side.</p>
-                 
-                 {/* Duplicated for smooth infinite scroll */}
-                 <p><span className="font-semibold text-chalk-white">Michael:</span> Let's review the deployment schedule for V2.</p>
-                 <p><span className="font-semibold text-chalk-white">Elena:</span> I'm ready. The backend is fully scalable now.</p>
-                 <p><span className="font-semibold text-chalk-white">Sarah:</span> Can someone take notes on the action items?</p>
-                 <p><span className="font-semibold text-neon-violet">Agentic AI:</span> I will automatically extract all action items and decisions made during this discussion and generate a structured summary.</p>
-                 <p><span className="font-semibold text-chalk-white">Michael:</span> Excellent. Let's move on to the marketing side.</p>
-               </div>
+                <div className="animate-scroll flex flex-col gap-3 text-sm md:text-base text-aurora-teal/90">
+                  <p><span className="font-semibold text-chalk-white">Michael:</span> Let&apos;s review the deployment schedule for V2.</p>
+                  <p><span className="font-semibold text-chalk-white">Elena:</span> I&apos;m ready. The backend is fully scalable now.</p>
+                  <p><span className="font-semibold text-chalk-white">Sarah:</span> Can someone take notes on the action items?</p>
+                  <p><span className="font-semibold text-neon-violet">Agentic AI:</span> I will automatically extract all action items and decisions made during this discussion and generate a structured summary.</p>
+                  <p><span className="font-semibold text-chalk-white">Michael:</span> Excellent. Let&apos;s move on to the marketing side.</p>
+                  
+                  {/* Duplicated for smooth infinite scroll */}
+                  <p><span className="font-semibold text-chalk-white">Michael:</span> Let&apos;s review the deployment schedule for V2.</p>
+                  <p><span className="font-semibold text-chalk-white">Elena:</span> I&apos;m ready. The backend is fully scalable now.</p>
+                  <p><span className="font-semibold text-chalk-white">Sarah:</span> Can someone take notes on the action items?</p>
+                  <p><span className="font-semibold text-neon-violet">Agentic AI:</span> I will automatically extract all action items and decisions made during this discussion and generate a structured summary.</p>
+                  <p><span className="font-semibold text-chalk-white">Michael:</span> Excellent. Let&apos;s move on to the marketing side.</p>
+                </div>
              </div>
              {/* Gradient fade out at top and bottom */}
              <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-obsidian-black to-transparent z-1 pointer-events-none" />

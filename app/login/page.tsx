@@ -5,16 +5,11 @@ import { authClient } from "@/lib/auth-client";
 import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 const Login = () => {
-  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!isPending && session) {
@@ -30,7 +25,7 @@ const Login = () => {
          <div className="absolute bottom-[20%] -right-[10%] w-[50vw] h-[50vw] bg-neon-violet/[0.07] rounded-full blur-[150px] animate-[pulseNeon_12s_ease-in-out_infinite_reverse]" />
       </div>
 
-      <div className="w-full max-w-md p-6 relative z-10 flex flex-col items-center animation-fade-in transition-opacity duration-1000" style={{ opacity: mounted ? 1 : 0 }}>
+      <div className="w-full max-w-md p-6 relative z-10 flex flex-col items-center animation-fade-in transition-opacity duration-1000">
         {/* Floating authentication module */}
         <div className="w-full glass rounded-[2rem] p-8 md:p-10 border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-black/40 backdrop-blur-2xl relative overflow-hidden">
           
@@ -82,8 +77,8 @@ const Login = () => {
 
           <div className="mt-8 pt-6 border-t border-white/5">
              <p className="text-center text-sm text-white/50 font-medium">
-               Don't have an account? <Link href="/signup" className="text-white font-bold hover:text-neon-violet transition-colors">Sign Up</Link>
-             </p>
+                Don&apos;t have an account? <Link href="/signup" className="text-white font-bold hover:text-neon-violet transition-colors">Sign Up</Link>
+              </p>
           </div>
         </div>
       </div>

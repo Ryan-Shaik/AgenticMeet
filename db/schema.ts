@@ -1,4 +1,5 @@
 import { boolean, integer, pgTable, real, text, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 export const user =  pgTable("user", {
     id: text("id").primaryKey(),
@@ -96,6 +97,71 @@ export const meetingAnalytics = pgTable("meeting_analytics", {
     engagementScore: real("engagement_score"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+export const plan = pgTable("plan", {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    stripePriceId: text("stripe_price_id"),
+    price: text("price"),
+    interval: text("interval").notNull(),
+    meetingLimit: text("meeting_limit"),
+    minuteLimit: text("minute_limit"),
+    aiLimit: text("ai_limit"),
+    features: text("features"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").notNull(),
+    updatedAt: timestamp("updated_at").notNull(),
+});
+
+export const subscription = pgTable("subscription", {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    stripeCustomerId: text("stripe_customer_id").notNull().unique(),
+    stripeSubscriptionId: text("stripe_subscription_id").unique(),
+    planId: text("plan_id").notNull().references(() => plan.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("inactive"),
+    currentPeriodStart: timestamp("current_period_start"),
+    currentPeriodEnd: timestamp("current_period_end"),
+    createdAt: timestamp("created_at").notNull(),
+    updatedAt: timestamp("updated_at").notNull(),
+});
+
+export const usage = pgTable("usage", {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    meetingsUsed: text("meetings_used").notNull().default("0"),
+    minutesUsed: text("minutes_used").notNull().default("0"),
+    aiInteractionsUsed: text("ai_interactions_used").notNull().default("0"),
+    periodStart: timestamp("period_start").notNull(),
+    periodEnd: timestamp("period_end").notNull(),
+    createdAt: timestamp("created_at").notNull(),
+    updatedAt: timestamp("updated_at").notNull(),
+});
+
+export const userRelations = relations(user, ({ many }) => ({
+    subscriptions: many(subscription),
+    sessions: many(session),
+    accounts: many(account),
+    usage: many(usage),
+}));
+
+export const subscriptionRelations = relations(subscription, ({ one }) => ({
+    user: one(user, {
+        fields: [subscription.userId],
+        references: [user.id],
+    }),
+    plan: one(plan, {
+        fields: [subscription.planId],
+        references: [plan.id],
+    }),
+}));
+
+export const usageRelations = relations(usage, ({ one }) => ({
+    user: one(user, {
+        fields: [usage.userId],
+        references: [user.id],
+    }),
+}));
 
 export type User = typeof user.$inferSelect;
 export type Session = typeof session.$inferSelect;

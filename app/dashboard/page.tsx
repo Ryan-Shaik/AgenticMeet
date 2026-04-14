@@ -4,17 +4,57 @@ import {
   Activity, Users, Mic, TrendingUp, FileText
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "../../components/ui/button";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { StartMeetingButton } from "@/components/dashboard/StartMeetingButton";
+import { ManageSubscriptionButton } from "@/components/dashboard/manage-subscription";
 import { db } from "@/db";
-import { summaries, meetings } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { summaries, meetings, subscription, plan, usage } from "@/db/schema";
+import { eq, desc, and, gte, lt } from "drizzle-orm";
 import { InsightsFeed } from "@/components/dashboard/InsightsFeed";
 import { MeetingActivity } from "@/components/dashboard/MeetingActivity";
 import { AnalyticsPanel } from "@/components/dashboard/AnalyticsPanel";
+
+async function getSubscriptionData(userId: string) {
+  const userSubscription = await db
+    .select()
+    .from(subscription)
+    .where(eq(subscription.userId, userId))
+    .then(res => res[0]);
+
+  if (!userSubscription) return null;
+
+  const userPlan = await db
+    .select()
+    .from(plan)
+    .where(eq(plan.id, userSubscription.planId))
+    .then(res => res[0]);
+
+  const now = new Date();
+  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  const userUsage = await db
+    .select()
+    .from(usage)
+    .where(
+      and(
+        eq(usage.userId, userId),
+        gte(usage.periodStart, periodStart),
+        lt(usage.periodStart, periodEnd)
+      )
+    )
+    .then(res => res[0]);
+
+  return {
+    status: userSubscription.status,
+    plan: userPlan,
+    usage: userUsage || { meetingsUsed: '0', minutesUsed: '0', aiInteractionsUsed: '0' },
+  };
+}
 
 const Dashboard = async () => {
   const session = await getSession();
@@ -47,6 +87,17 @@ const Dashboard = async () => {
     .orderBy(desc(meetings.createdAt))
     .limit(5);
 
+  const subData = await getSubscriptionData(session.user.id);
+  const isActive = subData?.status === 'active';
+  const planName = isActive ? (subData?.plan?.name || 'free') : 'free';
+  const planPrice = isActive ? (subData?.plan?.price || '0') : '0';
+  const meetingsUsed = parseInt(subData?.usage?.meetingsUsed || '0');
+  const minutesUsed = parseInt(subData?.usage?.minutesUsed || '0');
+  const aiInteractionsUsed = parseInt(subData?.usage?.aiInteractionsUsed || '0');
+  const meetingLimit = isActive && subData?.plan?.meetingLimit ? parseInt(subData.plan.meetingLimit) : -1;
+  const minuteLimit = isActive && subData?.plan?.minuteLimit ? parseInt(subData.plan.minuteLimit) : -1;
+  const aiLimit = isActive && subData?.plan?.aiLimit ? parseInt(subData.plan.aiLimit) : -1;
+  
   return (
     <div className="min-h-screen bg-obsidian-black text-chalk-white font-sans flex overflow-hidden">
       
@@ -79,11 +130,12 @@ const Dashboard = async () => {
             <h1 className="text-2xl font-bold tracking-tight">Organization Hub</h1>
             <p className="text-sm font-medium text-white/50 mt-1">Welcome back, {session?.user?.name?.split(' ')[0] || "User"}. You have 3 meetings today.</p>
           </div>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-aurora-teal/10 border border-aurora-teal/30 text-aurora-teal text-xs font-bold uppercase tracking-widest shadow-[0_0_10px_rgba(0,240,255,0.1)]">
-              <Zap size={12} className="fill-aurora-teal" /> Pro Plan
-            </div>
-            <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <ManageSubscriptionButton />
+            <Link href="/pricing" className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest shadow-[0_0_10px_rgba(0,240,255,0.1)] hover:opacity-80 transition-opacity ${planName === 'free' ? 'bg-white/10 border border-white/20 text-white/70' : planName === 'pro' ? 'bg-aurora-teal/10 border border-aurora-teal/30 text-aurora-teal' : 'bg-neon-violet/10 border border-neon-violet/30 text-neon-violet'}`}>
+              <Zap size={12} className={planName === 'pro' ? 'fill-aurora-teal' : planName === 'enterprise' ? 'fill-neon-violet' : ''} /> {planName.charAt(0).toUpperCase() + planName.slice(1)} Plan
+            </Link>
+              <div className="flex items-center gap-3">
               <div className="text-right hidden md:block">
                 <div className="text-sm font-bold">{session?.user?.name || "User"}</div>
                 <div className="text-xs font-medium text-white/50">Director of Product</div>
@@ -156,7 +208,7 @@ const Dashboard = async () => {
                     <p className="text-xs text-white/50 mb-4 flex items-center gap-1.5 font-medium">
                        <Users size={12} /> 4 Participants
                     </p>
-                    <div className="flex items-center justify-between text-[11px] font-bold text-aurora-teal border-t border-white/10 pt-3 relative w-full pt-4">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-aurora-teal border-t border-white/10 pt-3 relative w-full mt-4">
                       <div className="absolute top-0 left-0 h-px bg-gradient-to-r from-neon-violet to-transparent w-full"></div>
                       <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-aurora-teal animate-pulse"></div> Generating Notes...</span>
                       <span>42m</span>
@@ -172,7 +224,7 @@ const Dashboard = async () => {
                     <p className="text-xs text-white/50 mb-4 flex items-center gap-1.5 font-medium">
                        <Users size={12} /> 12 Participants
                     </p>
-                    <div className="flex items-center justify-between text-[11px] font-bold text-white/40 border-t border-white/5 pt-3">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-white/40 border-t border-white/5 pt-3 mt-4">
                       <span>No AI Agent</span>
                       <span>1h 15m</span>
                     </div>
@@ -186,9 +238,57 @@ const Dashboard = async () => {
             <AnalyticsPanel />
           </div>
 
-          {/* Analytics Widget (Bottom spans 12 cols) */}
-          <div className="lg:col-span-12 flex flex-col gap-6">
-            <div className="glass-card rounded-3xl p-6 border border-white/5 flex flex-col min-h-[260px] relative overflow-hidden">
+          {/* Analytics Widget & Subscription Info */}
+          <div className="lg:col-span-12 flex flex-col lg:flex-row gap-6">
+            {/* Usage & Plan Info Card */}
+            <div className="flex-1 glass-card rounded-3xl p-6 border border-white/5 flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Zap size={18} className="text-aurora-teal" />
+                  <h2 className="text-white font-bold text-lg">Your Subscription</h2>
+                </div>
+                <Link href="/pricing" className="text-xs font-semibold text-aurora-teal hover:text-white transition-colors">
+                  Upgrade Plan
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="text-xs font-bold text-white/50 uppercase mb-1">Current Plan</div>
+                  <div className="text-xl font-bold text-aurora-teal">{planName.charAt(0).toUpperCase() + planName.slice(1)}</div>
+                  <div className="text-xs text-white/50">${planPrice}/month</div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="text-xs font-bold text-white/50 uppercase mb-1">Meetings Used</div>
+                  <div className="text-xl font-bold text-white">
+                    {meetingsUsed} {meetingLimit === -1 ? '' : `/ ${meetingLimit}`}
+                  </div>
+                  <div className="text-xs text-white/50">{meetingLimit === -1 ? 'Unlimited' : meetingLimit - meetingsUsed + ' remaining'}</div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="text-xs font-bold text-white/50 uppercase mb-1">AI Minutes Used</div>
+                  <div className="text-xl font-bold text-white">
+                    {minutesUsed} {minuteLimit === -1 ? '' : `/ ${minuteLimit}`}
+                  </div>
+                  <div className="text-xs text-white/50">{minuteLimit === -1 ? 'Unlimited' : minuteLimit - minutesUsed + ' remaining'}</div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="text-xs font-bold text-white/50 uppercase mb-1">AI Interactions</div>
+                  <div className="text-xl font-bold text-white">
+                    {aiInteractionsUsed} {aiLimit === -1 ? '' : `/ ${aiLimit}`}
+                  </div>
+                  <div className="text-xs text-white/50">{aiLimit === -1 ? 'Unlimited' : aiLimit - aiInteractionsUsed + ' remaining'}</div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="text-xs font-bold text-white/50 uppercase mb-1">Status</div>
+                  <div className={`text-xl font-bold ${subData?.status === 'active' ? 'text-aurora-teal' : 'text-red-400'}`}>
+                    {subData?.status === 'active' ? 'Active' : 'Inactive'}
+                  </div>
+                  <div className="text-xs text-white/50">{subData?.status === 'active' ? 'Subscribed' : 'Upgrade to enable'}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 glass-card rounded-3xl p-6 border border-white/5 flex flex-col min-h-[260px] relative overflow-hidden">
                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 relative z-10 gap-4">
                   <div className="flex items-center gap-2">
                     <TrendingUp size={18} className="text-electric-blue" />
@@ -234,4 +334,3 @@ const Dashboard = async () => {
 }
 
 export default Dashboard;
-
