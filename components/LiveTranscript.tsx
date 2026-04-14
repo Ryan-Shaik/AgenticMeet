@@ -28,109 +28,9 @@ export function LiveTranscript({ meetingId, userName }: LiveTranscriptProps) {
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.warn('[LiveTranscript] Web Speech API not supported');
-      return;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const recognition = new SpeechRecognition();
-    
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onstart = () => {
-      console.log('[LiveTranscript] Web Speech recognition started');
-      setIsListening(true);
-    };
-
-    recognition.onend = () => {
-      console.log('[LiveTranscript] Web Speech recognition ended');
-      setIsListening(false);
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onerror = (event: any) => {
-      if (event.error === 'aborted') return;
-      console.warn('[LiveTranscript] Speech recognition error:', event.error);
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onresult = (event: any) => {
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          const text = result[0].transcript.trim();
-          if (text) {
-            const newTranscript: Transcript = {
-              id: crypto.randomUUID(),
-              speakerName: userName,
-              content: text,
-              timestamp: new Date(),
-              isAI: false,
-            };
-            setTranscripts(prev => [...prev, newTranscript]);
-
-            fetch('/api/transcription', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                meetingId,
-                speakerName: userName,
-                content: text,
-              }),
-            }).then(res => res.json()).then(data => {
-              console.log('[Transcript] Saved:', data);
-            }).catch(console.error);
-
-            fetch('/api/ai/chat', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ meetingId, lastSpeaker: userName }),
-            }).then(res => res.json()).then(data => {
-              if (data.shouldSpeak && data.message) {
-                const aiTranscript: Transcript = {
-                  id: crypto.randomUUID(),
-                  speakerName: 'Agentic AI',
-                  content: data.message,
-                  timestamp: new Date(),
-                  isAI: true,
-                };
-                setTranscripts(prev => [...prev, aiTranscript]);
-                
-                fetch('/api/transcription', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    meetingId,
-                    speakerName: 'Agentic AI',
-                    content: data.message,
-                  }),
-                }).catch(console.error);
-              }
-            }).catch(console.error);
-          }
-        } else {
-          const interimText = result[0].transcript.trim();
-          if (interimText) {
-            setInterimTranscripts(prev => ({ ...prev, [userName]: interimText }));
-          }
-        }
-      }
-    };
-
-    recognition.start();
-    recognitionRef.current = recognition;
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
-  }, [meetingId, userName]);
+    // Web Speech API disabled in favor of LiveKit Native Transcription
+    console.log('[LiveTranscript] Native transcription mode active');
+  }, []);
 
   useEffect(() => {
     if (!room) return;
@@ -138,11 +38,21 @@ export function LiveTranscript({ meetingId, userName }: LiveTranscriptProps) {
     const handleTranscription = (segments: TranscriptionSegment[], participant?: Participant) => {
       const participantId = participant?.identity || "Unknown";
       
-      const partialText = segments
-        .filter(s => !s.final)
-        .map(s => s.text)
-        .join(' ')
-        .trim();
+      const cleanTranscription = (rawText: string) => {
+        // Remove patterns like ( 1m 23s ), [ 1m 23s ], [ 1m 42s199ms ], etc.
+        return rawText
+          .replace(/\[\s*\d+m\s*\d+s\d*ms?\s*\]/g, '')
+          .replace(/\(\s*\d+m\s*\d+s\s*\)/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      };
+
+      const partialText = cleanTranscription(
+        segments
+          .filter(s => !s.final)
+          .map(s => s.text)
+          .join(' ')
+      );
         
       if (partialText) {
         setInterimTranscripts(prev => ({
@@ -154,7 +64,9 @@ export function LiveTranscript({ meetingId, userName }: LiveTranscriptProps) {
       const finalSegments = segments.filter(s => s.final);
       if (finalSegments.length === 0) return;
 
-      const text = finalSegments.map(s => s.text).join(' ').trim();
+      const text = cleanTranscription(
+        finalSegments.map(s => s.text).join(' ')
+      );
       if (!text) return;
 
       setInterimTranscripts(prev => {
