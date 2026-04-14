@@ -4,10 +4,6 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import db from "@/db";
 import { headers } from "next/headers";
 
-if (!db) {
-  throw new Error("Database not initialized. Ensure DATABASE_URL is set in environment.");
-}
-
 export const auth = betterAuth({
     database: drizzleAdapter(db, { 
         provider: "pg",
