@@ -20,8 +20,8 @@ const Home = async () => {
       <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
         <nav className="max-w-7xl mx-auto glass rounded-2xl px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-electric-blue to-aurora-teal flex items-center justify-center font-bold text-lg text-chalk-white shadow-[0_0_15px_rgba(0,240,255,0.4)]">
-              A
+            <div className="w-8 h-8 rounded-lg overflow-hidden shadow-[0_0_15px_rgba(0,240,255,0.4)]">
+              <Image src="/logo.png" alt="AgenticMeet" width={32} height={32} className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-xl tracking-tight">AgenticMeet</span>
           </div>

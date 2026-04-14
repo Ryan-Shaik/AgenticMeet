@@ -103,8 +103,8 @@ const Dashboard = async () => {
       
       {/* Left Navigation */}
       <nav className="w-20 border-r border-white/5 bg-black/50 flex flex-col items-center py-6 gap-8 z-20 shrink-0">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-electric-blue to-aurora-teal flex items-center justify-center font-bold text-xl text-white shadow-[0_0_15px_rgba(0,240,255,0.4)]">
-          A
+        <div className="w-10 h-10 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(0,240,255,0.4)] transition-transform hover:scale-110 duration-300">
+          <Image src="/logo.png" alt="AgenticMeet" width={40} height={40} className="w-full h-full object-cover" />
         </div>
         <div className="flex flex-col gap-6 flex-1 mt-4 text-white/50">
           <a href="#" className="p-3 rounded-xl bg-electric-blue/10 text-electric-blue hover:text-aurora-teal transition-colors relative group">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import db from '@/db';
 import { subscription, plan, usage } from '@/db/schema';
 import { eq, and, gte, lt } from 'drizzle-orm';
+import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
   try {

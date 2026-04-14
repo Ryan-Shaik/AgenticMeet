@@ -2,11 +2,44 @@
 
 import { authClient } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
-import { Check, Zap, Crown, Building2 } from 'lucide-react';
+import { Check, Zap, Crown, Building2, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function PricingPage() {
   const { data: session } = authClient.useSession();
   const router = useRouter();
+  const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
+
+  useEffect(() => {
+    async function fetchSubscriptionStatus() {
+      if (!session?.user?.id) {
+        setLoadingStatus(false);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/subscription/status', {
+          headers: {
+            'x-user-id': session.user.id
+          }
+        });
+        const data = await res.json();
+        if (data.plan?.id) {
+          setCurrentPlanId(data.plan.id);
+        } else {
+          setCurrentPlanId('free');
+        }
+      } catch (error) {
+        console.error('Failed to fetch status:', error);
+        setCurrentPlanId('free');
+      } finally {
+        setLoadingStatus(false);
+      }
+    }
+
+    fetchSubscriptionStatus();
+  }, [session]);
 
   const handleSubscribe = async (planId: string) => {
     if (!session?.user) {
@@ -96,6 +129,8 @@ export default function PricingPage() {
         <div className="grid md:grid-cols-3 gap-8">
           {plans.map((plan) => {
             const Icon = plan.icon;
+            const isCurrentPlan = currentPlanId === plan.id;
+            
             return (
               <div
                 key={plan.id}
@@ -133,17 +168,23 @@ export default function PricingPage() {
                 </ul>
 
                 <button
-                  onClick={() => plan.id !== 'free' && handleSubscribe(plan.id)}
-                  disabled={plan.id === 'free'}
-                  className={`w-full py-3 rounded-xl font-bold transition-all ${
-                    plan.id === 'free'
-                      ? 'bg-white/10 text-white/50 cursor-not-allowed'
+                  onClick={() => !isCurrentPlan && handleSubscribe(plan.id)}
+                  disabled={isCurrentPlan || (loadingStatus && !!session?.user)}
+                  className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                    isCurrentPlan
+                      ? 'bg-white/10 text-white/50 cursor-not-allowed border border-white/10'
                       : plan.highlighted
                       ? 'bg-electric-blue text-obsidian-black hover:bg-aurora-teal'
                       : 'bg-white/10 text-white hover:bg-white/20'
                   }`}
                 >
-                  {plan.id === 'free' ? 'Current Plan' : 'Subscribe Now'}
+                  {loadingStatus && !!session?.user ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : isCurrentPlan ? (
+                    'Current Plan'
+                  ) : (
+                    'Subscribe Now'
+                  )}
                 </button>
               </div>
             );

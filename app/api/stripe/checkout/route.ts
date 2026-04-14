@@ -3,6 +3,7 @@ import { stripe, getOrCreateStripeCustomer } from '@/lib/stripe';
 import db from '@/db';
 import { subscription, user } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import crypto from 'crypto';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
