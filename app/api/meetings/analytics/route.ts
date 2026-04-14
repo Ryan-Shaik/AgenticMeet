@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/db";
-import { meetingAnalytics, meetings } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
-import { calculateMeetingAnalytics } from "@/lib/ai/analytics";
+import { meetingAnalytics, meetings, transcripts } from "@/db/schema";
+import { eq, desc, asc } from "drizzle-orm";
+import { calculateMeetingAnalytics, calculateEngagement } from "@/lib/ai/analytics";
 
 export async function POST(req: NextRequest) {
   try {
@@ -64,23 +64,42 @@ export async function GET(req: NextRequest) {
       .where(eq(meetingAnalytics.meetingId, meetingId))
       .orderBy(desc(meetingAnalytics.wordCount));
 
-    // Filter out AI speakers in code
     const analytics = allAnalytics.filter(a => 
       !a.speakerName?.toLowerCase().includes('agent') && 
       !a.speakerName?.toLowerCase().includes('ai') &&
       !a.speakerName?.toLowerCase().includes('assistant')
     );
 
-    // Count unique speakers
     const uniqueSpeakers = new Set(analytics.map(a => a.speakerName));
     const speakerCount = uniqueSpeakers.size;
 
     const totalTalkTime = analytics.reduce((sum, a) => sum + a.talkTimeMs, 0);
     const totalWords = analytics.reduce((sum, a) => sum + a.wordCount, 0);
     const totalTurns = analytics.reduce((sum, a) => sum + a.speakingTurns, 0);
-    const avgEngagement = analytics.length > 0
-      ? analytics.reduce((sum, a) => sum + (a.engagementScore || 0), 0) / analytics.length
-      : 0;
+
+    const meetingTranscripts = await db
+      .select()
+      .from(transcripts)
+      .where(eq(transcripts.meetingId, meetingId))
+      .orderBy(asc(transcripts.timestamp));
+    
+    const humanTranscripts = meetingTranscripts.filter(t => 
+      !t.speakerName?.toLowerCase().includes('agent') && 
+      !t.speakerName?.toLowerCase().includes('ai') &&
+      !t.speakerName?.toLowerCase().includes('assistant')
+    );
+    
+    const speakerStatsMap = new Map<string, { wordCount: number; speakingTurns: number }>();
+    for (const t of humanTranscripts) {
+      const name = t.speakerName || "Unknown";
+      const existing = speakerStatsMap.get(name) || { wordCount: 0, speakingTurns: 0 };
+      speakerStatsMap.set(name, {
+        wordCount: existing.wordCount + (t.content?.split(/\s+/).filter(w => w.length > 0).length || 0),
+        speakingTurns: existing.speakingTurns + 1
+      });
+    }
+    const speakerStatsArray = Array.from(speakerStatsMap.values());
+    const overallEngagement = calculateEngagement(speakerStatsArray as any);
 
     return NextResponse.json({
       meetingId,
@@ -93,7 +112,7 @@ export async function GET(req: NextRequest) {
           totalWords,
           totalSpeakingTurns: totalTurns,
           speakerCount: speakerCount,
-          avgEngagementScore: Math.round(avgEngagement),
+          overallEngagementScore: overallEngagement,
           overallSentiment: "neutral"
         }
       }

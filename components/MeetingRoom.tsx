@@ -49,7 +49,10 @@ export function MeetingRoom({ roomName, userName }: MeetingRoomProps) {
       // Also trigger analytics calculation immediately
       await fetch('/api/meetings/analytics', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-api-key': 'dev-secret-key'
+        },
         body: JSON.stringify({ meetingId: roomName }),
       });
     } catch (e) {

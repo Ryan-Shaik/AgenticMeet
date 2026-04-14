@@ -8,7 +8,7 @@ interface MeetingAnalyticsSummary {
   meetingDate: string;
   speakerCount: number;
   totalTalkTimeMs: number;
-  avgEngagementScore: number;
+  overallEngagementScore: number;
 }
 
 function formatDuration(ms: number): string {
@@ -80,7 +80,7 @@ export function AnalyticsPanel() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-aurora-teal font-bold">
-                    {item.avgEngagementScore}%
+                    {item.overallEngagementScore}%
                   </span>
                 </div>
               </button>
@@ -171,7 +171,7 @@ function MeetingAnalyticsPopup({ meetingId, onClose }: { meetingId: string; onCl
               </div>
               <div className="bg-white/5 rounded-xl p-3">
                 <div className="text-[10px] text-white/40 uppercase mb-1 flex items-center gap-1"><Activity size={10}/> Engagement</div>
-                <div className="text-lg font-bold text-aurora-teal">{data.analytics.summary.avgEngagementScore}%</div>
+                <div className="text-lg font-bold text-aurora-teal">{data.analytics.summary.overallEngagementScore}%</div>
               </div>
             </div>
 

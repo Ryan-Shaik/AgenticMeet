@@ -23,7 +23,7 @@ interface AnalyticsData {
       totalWords: number;
       totalSpeakingTurns: number;
       speakerCount: number;
-      avgEngagementScore: number;
+      overallEngagementScore: number;
       overallSentiment: string;
     };
   };
@@ -159,10 +159,10 @@ export function AnalyticsModal({ meetingId, isOpen, onClose }: AnalyticsModalPro
               <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                 <div className="flex items-center gap-2 text-white/40 mb-1">
                   <Activity size={12} />
-                  <span className="text-[10px] font-medium uppercase">Engagement</span>
+                  <span className="text-[10px] font-medium uppercase">Overall Engagement</span>
                 </div>
                 <div className="text-xl font-bold text-aurora-teal">
-                  {data.analytics.summary.avgEngagementScore}%
+                  {data.analytics.summary.overallEngagementScore}%
                 </div>
               </div>
             </div>
@@ -201,6 +201,7 @@ export function AnalyticsModal({ meetingId, isOpen, onClose }: AnalyticsModalPro
                       <span>{formatDuration(speaker.talkTimeMs)}</span>
                       <span>{speaker.wordCount} words</span>
                       <span>{speaker.speakingTurns} turns</span>
+                      <span className="text-aurora-teal">{speaker.engagementScore ?? 'N/A'} engagement</span>
                     </div>
                   </div>
                 );

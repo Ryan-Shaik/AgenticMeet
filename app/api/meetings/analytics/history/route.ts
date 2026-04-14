@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
         speakerCount: uniqueHumans.size,
         totalTalkTimeMs: Number(a.totalTalkTime || 0),
         totalWords: Number(a.totalWords || 0),
-        avgEngagementScore: Math.round(Number(a.engagement || 0)),
+        overallEngagementScore: Math.round(Number(a.engagement || 0)),
       });
     }
 

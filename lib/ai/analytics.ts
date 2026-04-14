@@ -30,7 +30,7 @@ function countWords(text: string): number {
   return text.split(/\s+/).filter(word => word.length > 0).length;
 }
 
-function calculateEngagement(speakerStats: SpeakerStats[]): number {
+export function calculateEngagement(speakerStats: SpeakerStats[]): number {
   if (speakerStats.length === 0) return 0;
   
   const totalTurns = speakerStats.reduce((sum, s) => sum + s.speakingTurns, 0);
@@ -41,6 +41,29 @@ function calculateEngagement(speakerStats: SpeakerStats[]): number {
     : 0;
   
   return Math.min(100, Math.round((avgWordsPerTurn * 10 + speakerBalance * 40) / 2));
+}
+
+export function calculateIndividualEngagement(
+  speakerStat: SpeakerStats,
+  allSpeakerStats: SpeakerStats[]
+): number {
+  if (allSpeakerStats.length === 0) return 0;
+  
+  const totalWords = allSpeakerStats.reduce((sum, s) => sum + s.wordCount, 0);
+  const totalTurns = allSpeakerStats.reduce((sum, s) => sum + s.speakingTurns, 0);
+  
+  const participationRatio = (speakerStat.wordCount / Math.max(totalWords, 1)) * 100;
+  const wordsPerTurn = speakerStat.speakingTurns > 0
+    ? (speakerStat.wordCount / speakerStat.speakingTurns)
+    : 0;
+  const wordsPerTurnScore = Math.min(wordsPerTurn / 2, 50);
+  const speakerBalance = allSpeakerStats.length > 1
+    ? (1 - (Math.max(...allSpeakerStats.map(s => s.wordCount)) / Math.max(totalWords, 1))) * 100
+    : 50;
+  
+  return Math.min(100, Math.round(
+    participationRatio * 0.4 + wordsPerTurnScore + speakerBalance * 0.3
+  ));
 }
 
 export async function analyzeMeetingSentiment(text: string): Promise<string> {
@@ -147,7 +170,7 @@ export async function calculateMeetingAnalytics(meetingId: string): Promise<Meet
         wordCount: stat.wordCount,
         speakingTurns: stat.speakingTurns,
         sentimentScore: null,
-        engagementScore: overallEngagement,
+        engagementScore: calculateIndividualEngagement(stat, speakerStats),
         createdAt: new Date(),
       });
     }

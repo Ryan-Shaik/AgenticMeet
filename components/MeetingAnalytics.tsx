@@ -23,7 +23,7 @@ interface AnalyticsData {
       totalWords: number;
       totalSpeakingTurns: number;
       speakerCount: number;
-      avgEngagementScore: number;
+      overallEngagementScore: number;
       overallSentiment: string;
     };
   };
@@ -153,10 +153,10 @@ export function MeetingAnalytics({ meetingId }: { meetingId: string }) {
         <div className="bg-white/5 rounded-xl p-4 border border-white/5">
           <div className="flex items-center gap-2 text-white/40 mb-2">
             <Activity size={14} />
-            <span className="text-xs font-medium uppercase">Engagement</span>
+            <span className="text-xs font-medium uppercase">Overall Engagement</span>
           </div>
           <div className="text-2xl font-bold text-aurora-teal">
-            {analytics.summary.avgEngagementScore}%
+            {analytics.summary.overallEngagementScore}%
           </div>
         </div>
       </div>
@@ -193,7 +193,7 @@ export function MeetingAnalytics({ meetingId }: { meetingId: string }) {
                   style={{ width: `${(speaker.talkTimeMs / maxTalkTime) * 100}%` }}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-white/5">
+              <div className="grid grid-cols-3 gap-4 mt-3 pt-3 border-t border-white/5">
                 <div className="text-center">
                   <div className="text-lg font-bold text-chalk-white">{speaker.wordCount}</div>
                   <div className="text-[10px] text-white/40 uppercase">Words</div>
@@ -201,6 +201,10 @@ export function MeetingAnalytics({ meetingId }: { meetingId: string }) {
                 <div className="text-center">
                   <div className="text-lg font-bold text-chalk-white">{speaker.speakingTurns}</div>
                   <div className="text-[10px] text-white/40 uppercase">Turns</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-aurora-teal">{speaker.engagementScore ?? 'N/A'}</div>
+                  <div className="text-[10px] text-white/40 uppercase">Engagement</div>
                 </div>
               </div>
             </div>

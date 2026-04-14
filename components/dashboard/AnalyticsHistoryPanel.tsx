@@ -8,7 +8,7 @@ interface MeetingAnalyticsSummary {
   meetingDate: string;
   speakerCount: number;
   totalTalkTimeMs: number;
-  avgEngagementScore: number;
+  overallEngagementScore: number;
 }
 
 interface AnalyticsHistoryPanelProps {
@@ -86,7 +86,7 @@ export function AnalyticsHistoryPanel({ refreshTrigger }: AnalyticsHistoryPanelP
                     <Users size={10} /> {item.speakerCount}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Activity size={10} /> {item.avgEngagementScore}%
+                    <Activity size={10} /> {item.overallEngagementScore}%
                   </span>
                   <ChevronRight size={14} className="text-white/20 group-hover:text-aurora-teal transition-colors" />
                 </div>
