@@ -163,6 +163,7 @@ export const usageRelations = relations(usage, ({ one }) => ({
     }),
 }));
 
+
 export type User = typeof user.$inferSelect;
 export type Session = typeof session.$inferSelect;
 export type Account = typeof account.$inferSelect;
@@ -175,3 +176,4 @@ export type MeetingAnalytics = typeof meetingAnalytics.$inferSelect;
 export type NewMeeting = typeof meetings.$inferInsert;
 export type NewSummary = typeof summaries.$inferInsert;
 export type NewMeetingAnalytics = typeof meetingAnalytics.$inferInsert;
+

@@ -60,6 +60,7 @@ const Dashboard = async () => {
   const session = await getSession();
   if(!session) return redirect("/login");
 
+
   const insights = await db
     .select({
       id: summaries.id,
@@ -97,7 +98,6 @@ const Dashboard = async () => {
   const meetingLimit = isActive && subData?.plan?.meetingLimit ? parseInt(subData.plan.meetingLimit) : -1;
   const minuteLimit = isActive && subData?.plan?.minuteLimit ? parseInt(subData.plan.minuteLimit) : -1;
   const aiLimit = isActive && subData?.plan?.aiLimit ? parseInt(subData.plan.aiLimit) : -1;
-  
   return (
     <div className="min-h-screen bg-obsidian-black text-chalk-white font-sans flex overflow-hidden">
       
@@ -238,9 +238,8 @@ const Dashboard = async () => {
             <AnalyticsPanel />
           </div>
 
-          {/* Analytics Widget & Subscription Info */}
+          {/* Usage & Subscription Info */}
           <div className="lg:col-span-12 flex flex-col lg:flex-row gap-6">
-            {/* Usage & Plan Info Card */}
             <div className="flex-1 glass-card rounded-3xl p-6 border border-white/5 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -261,33 +260,42 @@ const Dashboard = async () => {
                   <div className="text-xs font-bold text-white/50 uppercase mb-1">Meetings Used</div>
                   <div className="text-xl font-bold text-white">
                     {meetingsUsed} {meetingLimit === -1 ? '' : `/ ${meetingLimit}`}
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="text-xs font-bold text-white/50 uppercase mb-1">Current Plan</div>
+                    <div className="text-xl font-bold text-aurora-teal">{planName.charAt(0).toUpperCase() + planName.slice(1)}</div>
+                    <div className="text-xs text-white/50">${planPrice}/month</div>
                   </div>
-                  <div className="text-xs text-white/50">{meetingLimit === -1 ? 'Unlimited' : meetingLimit - meetingsUsed + ' remaining'}</div>
-                </div>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-xs font-bold text-white/50 uppercase mb-1">AI Minutes Used</div>
-                  <div className="text-xl font-bold text-white">
-                    {minutesUsed} {minuteLimit === -1 ? '' : `/ ${minuteLimit}`}
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="text-xs font-bold text-white/50 uppercase mb-1">Status</div>
+                    <div className={`text-xl font-bold ${subData?.status === 'active' ? 'text-aurora-teal' : 'text-red-400'}`}>
+                      {subData?.status === 'active' ? 'Active' : 'Inactive'}
+                    </div>
+                    <div className="text-xs text-white/50">{subData?.status === 'active' ? 'Subscribed' : 'Upgrade to enable'}</div>
                   </div>
-                  <div className="text-xs text-white/50">{minuteLimit === -1 ? 'Unlimited' : minuteLimit - minutesUsed + ' remaining'}</div>
-                </div>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-xs font-bold text-white/50 uppercase mb-1">AI Interactions</div>
-                  <div className="text-xl font-bold text-white">
-                    {aiInteractionsUsed} {aiLimit === -1 ? '' : `/ ${aiLimit}`}
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="text-xs font-bold text-white/50 uppercase mb-1">Meetings Used</div>
+                    <div className="text-xl font-bold text-white">
+                      {meetingsUsed} {meetingLimit === -1 ? '' : `/ ${meetingLimit}`}
+                    </div>
+                    <div className="text-xs text-white/50">{meetingLimit === -1 ? 'Unlimited' : meetingLimit - meetingsUsed + ' remaining'}</div>
                   </div>
-                  <div className="text-xs text-white/50">{aiLimit === -1 ? 'Unlimited' : aiLimit - aiInteractionsUsed + ' remaining'}</div>
-                </div>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-xs font-bold text-white/50 uppercase mb-1">Status</div>
-                  <div className={`text-xl font-bold ${subData?.status === 'active' ? 'text-aurora-teal' : 'text-red-400'}`}>
-                    {subData?.status === 'active' ? 'Active' : 'Inactive'}
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="text-xs font-bold text-white/50 uppercase mb-1">AI Minutes Used</div>
+                    <div className="text-xl font-bold text-white">
+                      {minutesUsed} {minuteLimit === -1 ? '' : `/ ${minuteLimit}`}
+                    </div>
+                    <div className="text-xs text-white/50">{minuteLimit === -1 ? 'Unlimited' : minuteLimit - minutesUsed + ' remaining'}</div>
                   </div>
-                  <div className="text-xs text-white/50">{subData?.status === 'active' ? 'Subscribed' : 'Upgrade to enable'}</div>
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="text-xs font-bold text-white/50 uppercase mb-1">AI Interactions</div>
+                    <div className="text-xl font-bold text-white">
+                      {aiInteractionsUsed} {aiLimit === -1 ? '' : `/ ${aiLimit}`}
+                    </div>
+                    <div className="text-xs text-white/50">{aiLimit === -1 ? 'Unlimited' : aiLimit - aiInteractionsUsed + ' remaining'}</div>
+                  </div>
                 </div>
               </div>
             </div>
-
             <div className="flex-1 glass-card rounded-3xl p-6 border border-white/5 flex flex-col min-h-[260px] relative overflow-hidden">
                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 relative z-10 gap-4">
                   <div className="flex items-center gap-2">
