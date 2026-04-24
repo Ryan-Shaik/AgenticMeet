@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       .orderBy(desc(transcripts.timestamp))
       .limit(500);
 
-    // Filter in code for flexibility
+    
     let results = allTranscripts;
 
     if (meetingId) {
