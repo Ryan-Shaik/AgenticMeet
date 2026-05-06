@@ -50,6 +50,13 @@
       "when": 1776105386355,
       "tag": "0006_faulty_prism",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1778019569005,
+      "tag": "0007_polite_blonde_phantom",
+      "breakpoints": true
     }
   ]
 }

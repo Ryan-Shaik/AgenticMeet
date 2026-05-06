@@ -9,6 +9,7 @@ export const user =  pgTable("user", {
     emailVerified: boolean("email_verified").notNull().default(false),
     createdAt: timestamp("created_at").notNull(),
     updatedAt: timestamp("updated_at").notNull(),
+    systemRole: text("system_role").default("user"),
 });
 
 export const session = pgTable("session", {
@@ -138,6 +139,30 @@ export const usage = pgTable("usage", {
     updatedAt: timestamp("updated_at").notNull(),
 });
 
+export const team = pgTable("team", {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    adminId: text("admin_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    stripeCustomerId: text("stripe_customer_id"),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    planId: text("plan_id").notNull().references(() => plan.id),
+    status: text("status").notNull().default("active"),
+    seatCount: integer("seat_count").notNull().default(1),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const teamMember = pgTable("team_member", {
+    id: text("id").primaryKey(),
+    teamId: text("team_id").notNull().references(() => team.id, { onDelete: "cascade" }),
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    email: text("email").notNull(),
+    role: text("role").notNull().default("member"),
+    status: text("status").notNull().default("pending"),
+    invitedAt: timestamp("invited_at").notNull().defaultNow(),
+    joinedAt: timestamp("joined_at"),
+});
+
 export const userRelations = relations(user, ({ many }) => ({
     subscriptions: many(subscription),
     sessions: many(session),
@@ -163,6 +188,17 @@ export const usageRelations = relations(usage, ({ one }) => ({
     }),
 }));
 
+export const teamRelations = relations(team, ({ one, many }) => ({
+    admin: one(user, { fields: [team.adminId], references: [user.id] }),
+    plan: one(plan, { fields: [team.planId], references: [plan.id] }),
+    members: many(teamMember),
+}));
+
+export const teamMemberRelations = relations(teamMember, ({ one }) => ({
+    team: one(team, { fields: [teamMember.teamId], references: [team.id] }),
+    user: one(user, { fields: [teamMember.userId], references: [user.id] }),
+}));
+
 
 export type User = typeof user.$inferSelect;
 export type Session = typeof session.$inferSelect;
@@ -173,6 +209,8 @@ export type Speaker = typeof speakers.$inferSelect;
 export type Transcript = typeof transcripts.$inferSelect;
 export type Summary = typeof summaries.$inferSelect;
 export type MeetingAnalytics = typeof meetingAnalytics.$inferSelect;
+export type Team = typeof team.$inferSelect;
+export type TeamMember = typeof teamMember.$inferSelect;
 export type NewMeeting = typeof meetings.$inferInsert;
 export type NewSummary = typeof summaries.$inferInsert;
 export type NewMeetingAnalytics = typeof meetingAnalytics.$inferInsert;
