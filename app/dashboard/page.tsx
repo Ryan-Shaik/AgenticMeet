@@ -5,14 +5,13 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "../../components/ui/button";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { StartMeetingButton } from "@/components/dashboard/StartMeetingButton";
 import { ManageSubscriptionButton } from "@/components/dashboard/manage-subscription";
 import { db } from "@/db";
-import { summaries, meetings, subscription, plan, usage } from "@/db/schema";
+import { summaries, meetings, subscription, plan, usage, user } from "@/db/schema";
 import { eq, desc, and, gte, lt } from "drizzle-orm";
 import { InsightsFeed } from "@/components/dashboard/InsightsFeed";
 import { MeetingActivity } from "@/components/dashboard/MeetingActivity";
@@ -60,6 +59,9 @@ const Dashboard = async () => {
   const session = await getSession();
   if(!session) return redirect("/login");
 
+  const userData = await db.select().from(user)
+    .where(eq(user.id, session.user.id))
+    .then(res => res[0]);
 
   const insights = await db
     .select({
@@ -114,6 +116,12 @@ const Dashboard = async () => {
           <a href="#" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Meetings"><Video size={22} /></a>
           <a href="#analytics" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Analytics"><BarChart2 size={22} /></a>
           <a href="/transcripts" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Transcripts"><FileText size={22} /></a>
+          {userData?.systemRole === 'system_admin' && (
+            <Link href="/admin/billing" className="p-3 rounded-xl hover:bg-white/5 hover:text-white transition-colors" title="Billing Admin">
+              <BarChart2 size={22} />
+              <span className="sr-only">Billing Admin</span>
+            </Link>
+          )}
         </div>
         <a href="#" className="p-3 rounded-xl hover:bg-white/5 text-white/50 hover:text-white transition-colors" title="Settings"><Settings size={22} /></a>
       </nav>
